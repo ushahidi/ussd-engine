@@ -23,7 +23,7 @@ class AfricasTalkingDriver extends WebDriver
 
         $payload = [
             'driver' => 'web',
-            'message' => isset($data['text']) ? $data['text'] : null,
+            'message' => isset($data['text']) ? $this->splitMessage($data['text']) : null,
             'userId' =>  isset($data['sessionId']) ? $data['sessionId'] : null,
         ];
 
@@ -72,5 +72,12 @@ class AfricasTalkingDriver extends WebDriver
         }
 
         return true;
+    }
+
+    private function splitMessage(string $message)
+    {
+        $parts = explode('*', $message);
+
+        return end($parts);
     }
 }
