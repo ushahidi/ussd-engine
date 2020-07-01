@@ -8,6 +8,7 @@ use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
 class SurveyConversation extends Conversation
@@ -75,11 +76,11 @@ class SurveyConversation extends Conversation
             $answerForField = $answer->getText();
 
             if ($answerForField) {
-                $user = $this->bot->getUser();
-                $response = [
-                    'user_input' => $answerForField,
-                    'user_id' => $user->getId(),
-                ];
+                $userId = $this->bot->getUser()->getId();
+                $key = "survey_{$this->survey->id}-{$userId}";
+                $userAnswers = Cache::get($key, []);
+                $userAnswers[$field->key] = $answerForField;
+                Cache::forever($key, $userAnswers);
             }
 
             $this->fields->forget($field->id);
