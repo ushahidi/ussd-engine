@@ -2,12 +2,12 @@
 
 namespace App\Conversations;
 
-use App\Field;
-use App\Survey;
+use App\Surveys;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 
 class SurveyConversation extends Conversation
@@ -16,11 +16,9 @@ class SurveyConversation extends Conversation
 
     protected $fields;
 
-    protected $currentField;
-
     protected function askSurvey()
     {
-        $surveys = Survey::all();
+        $surveys = Collection::make(Surveys::load());
         $question = Question::create('Which form do you want to complete?')
             ->addButtons(
                 $surveys->map(function ($survey) {
@@ -46,8 +44,10 @@ class SurveyConversation extends Conversation
 
     protected function askSurveyFields()
     {
-        $this->fields = $this->survey->fields;
-        $this->fields = $this->fields->keyBy('id');
+        $this->fields = Collection::make($this->survey->tasks)
+                            ->pluck('fields')
+                            ->flatten()
+                            ->keyBy('id');
 
         $this->checkForNextFields();
     }
@@ -59,7 +59,7 @@ class SurveyConversation extends Conversation
         }
     }
 
-    private function askField(Field $field)
+    private function askField($field)
     {
         $this->ask($this->createQuestionForField($field), function (BotManAnswer $answer) use ($field) {
             $errors = $this->validateAnswer($field, $answer);
@@ -76,10 +76,10 @@ class SurveyConversation extends Conversation
 
             if ($answerForField) {
                 $user = $this->bot->getUser();
-                $field->answers()->create([
+                $response = [
                     'user_input' => $answerForField,
                     'user_id' => $user->getId(),
-                ]);
+                ];
             }
 
             $this->fields->forget($field->id);
@@ -87,19 +87,20 @@ class SurveyConversation extends Conversation
         });
     }
 
-    private function createQuestionForField(Field $field)
+    private function createQuestionForField($field)
     {
         $question = Question::create($field->label.':');
 
         return $question;
     }
 
-    private function validateAnswer(Field $field, BotManAnswer $answer)
+    private function validateAnswer($field, BotManAnswer $answer)
     {
+        $validationRules = Surveys::assembleFieldValidationRules($field);
         $validator = Validator::make([
             $field->key => $answer->getText(),
         ], [
-           $field->key => $field->validation_rules,
+           $field->key => $validationRules,
         ]);
 
         if ($validator->fails()) {
