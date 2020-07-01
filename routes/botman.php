@@ -15,9 +15,3 @@ $botman->hears('Hi', function ($bot) {
 $botman->hears('survey', function ($bot) {
     $bot->startConversation(new SurveyConversation());
 });
-
-$botman->group(['driver' => [AfricasTalkingDriver::class]], function ($bot) {
-    $bot->fallback(function ($bot) {
-        $bot->startConversation(new SurveyConversation());
-    });
-});

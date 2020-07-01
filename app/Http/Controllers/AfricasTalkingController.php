@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Drivers\AfricasTalkingDriver;
-use BotMan\BotMan\Drivers\DriverManager;
+use App\Conversations\SurveyConversation;
 use Illuminate\Http\Request;
 
 class AfricasTalkingController extends Controller
 {
-    public function interaction()
+    public function handle()
     {
         $botman = app('botman');
+
+        $botman->fallback(function ($bot) {
+            $bot->startConversation(new SurveyConversation());
+        });
 
         try {
             $botman->listen();
