@@ -2,6 +2,7 @@
 
 namespace App\Conversations;
 
+use App\Messages\Outgoing\EndingMessage;
 use App\Surveys;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
@@ -56,8 +57,12 @@ class SurveyConversation extends Conversation
     private function checkForNextFields()
     {
         if ($this->fields->count()) {
-            return $this->askField($this->fields->first());
+            $this->askField($this->fields->first());
+
+            return;
         }
+
+        $this->sendEndingMessage();
     }
 
     private function askField($field)
@@ -109,6 +114,11 @@ class SurveyConversation extends Conversation
 
             return $errors;
         }
+    }
+
+    public function sendEndingMessage()
+    {
+        $this->say(EndingMessage::create('Thanks for submitting your response.'));
     }
 
     /**
