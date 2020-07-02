@@ -464,5 +464,59 @@
             "default": "",
             "available": []
         }
+    },
+    {
+        "id": 2,
+        "name": "Short Test Form",
+        "parent_id": null,
+        "description": "Testing form",
+        "type": "report",
+        "disabled": false,
+        "require_approval": false,
+        "everyone_can_create": true,
+        "color": null,
+        "hide_author": false,
+        "hide_time": 0,
+        "hide_location": 0,
+        "targeted_survey": 0,
+        "translations": [],
+        "tasks": [
+            {
+                "id": 1,
+                "form_id": 1,
+                "label": "Main",
+                "priority": 1,
+                "required": 0,
+                "type": "post",
+                "description": null,
+                "show_when_published": 1,
+                "task_is_internal_only": 0,
+                "fields": [
+                    {
+                        "id": 1,
+                        "key": "test_varchar",
+                        "label": "Test varchar",
+                        "instructions": null,
+                        "input": "text",
+                        "type": "varchar",
+                        "required": 0,
+                        "default": null,
+                        "priority": 1,
+                        "options": null,
+                        "cardinality": 1,
+                        "config": null,
+                        "response_private": 0,
+                        "form_stage_id": 1,
+                        "translations": []
+                    }
+                ],
+                "translations": []
+            }
+        ],
+        "can_create": [],
+        "enabled_languages": {
+            "default": "",
+            "available": []
+        }
     }
 ]
