@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,9 +17,4 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/ussd/africas-talking', function () {
-    // There's nothing to do, the drivers are handling everything
-});
-Route::post('/telegram', function () {
-    // There's nothing to do, the drivers are handling everything
-});
+Route::post('/africastalking', 'AfricasTalkingController@handle');

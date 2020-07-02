@@ -1,30 +1,17 @@
 <?php
 
-use App\Drivers\USSDDriver;
-use App\Http\Conversations\OnboardingConversation;
-use BotMan\BotMan\BotManFactory;
-use BotMan\BotMan\Cache\LaravelCache;
+use App\Conversations\SurveyConversation;
+use App\Drivers\AfricasTalkingDriver;
 use BotMan\BotMan\Drivers\DriverManager;
-use BotMan\Drivers\Telegram\TelegramDriver;
 
-$config = [
-  'web' => [
-    'matchingData' => [
-      'driver' => 'web',
-    ],
-  ],
-  'telegram' => [
-    'token' => '1156148638:AAHb6ElYV9HZ2IxvkFuYUur8uMTHl97G5xY',
-  ],
-];
+DriverManager::loadDriver(AfricasTalkingDriver::class);
 
-DriverManager::loadDriver(USSDDriver::class);
-DriverManager::loadDriver(TelegramDriver::class);
+$botman = resolve('botman');
 
-$botman = BotManFactory::create($config, new LaravelCache());
-
-$botman->fallback(function ($bot) {
-    $bot->startConversation(new OnboardingConversation);
+$botman->hears('Hi', function ($bot) {
+    $bot->reply('Hello!');
 });
 
-$botman->listen();
+$botman->hears('survey', function ($bot) {
+    $bot->startConversation(new SurveyConversation());
+});
