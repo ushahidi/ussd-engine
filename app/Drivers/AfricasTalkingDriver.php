@@ -2,13 +2,13 @@
 
 namespace App\Drivers;
 
+use App\Messages\Outgoing\EndingMessage;
+use BotMan\BotMan\Interfaces\WebAccess;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
-use BotMan\BotMan\Users\User;
 use BotMan\Drivers\Web\WebDriver;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,29 +34,66 @@ class AfricasTalkingDriver extends WebDriver
     }
 
     /**
+     * @param string|Question|OutgoingMessage $message
+     * @param IncomingMessage $matchingMessage
+     * @param array $additionalParameters
+     * @return Response
+     */
+    public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
+    {
+        if (! $message instanceof WebAccess && ! $message instanceof OutgoingMessage) {
+            $this->errorMessage = 'Unsupported message type.';
+            $this->replyStatusCode = 500;
+        }
+
+        return $message;
+    }
+
+    /**
+     * @param $messages
+     * @return array
+     */
+    protected function buildReply($messages)
+    {
+        $sessionIsCompleted = false;
+        $replies = [];
+
+        foreach ($messages as $message) {
+            if ($message instanceof WebAccess) {
+                $messageData = $message->toWebDriver();
+                if ($messageData['type'] === 'text') {
+                    $replies[] = $messageData['text'];
+                } elseif ($messageData['type'] === 'actions') {
+                    $replies[] = $messageData['text'];
+                    foreach ($messageData['actions'] as $action) {
+                        $replies[] = "Send {$action['value']} for {$action['text']}.";
+                    }
+                }
+            } elseif ($message instanceof OutgoingMessage) {
+                $replies[] = $message->getText();
+            }
+
+            if ($message instanceof EndingMessage) {
+                $sessionIsCompleted = true;
+            }
+        }
+
+        $reply = $sessionIsCompleted ? 'END ' : 'CON ';
+
+        $reply .= implode("\n", $replies);
+
+        return $reply;
+    }
+
+    /**
      * Send out message response.
      */
     public function messagesHandled()
     {
-        $messages = $this->buildReply($this->replies);
+        $response = $this->buildReply($this->replies);
 
         // Reset replies
         $this->replies = [];
-
-        $response = 'CON ';
-
-        foreach ($messages as $message) {
-            if ($message['type'] === 'text') {
-                $response .= $message['text']."\n ";
-            }
-
-            if ($message['type'] === 'actions') {
-                $response .= $message['text']."\n ";
-                foreach ($message['actions'] as $action) {
-                    $response .= "Send {$action['value']} for {$action['text']}.\n ";
-                }
-            }
-        }
 
         Response::create($response, $this->replyStatusCode, ['Content-Type' => 'text/plain'])->send();
     }
