@@ -2,10 +2,14 @@
 
 ## Getting started
 
+## About this project
+This project was created to enable USSD integrations in the Ushahidi Platform.
+
+
 ### About BotMan Studio and Laravel
 
 BotMan Studio is a [Laravel](https://laravel.com)  and [Botman](http://botman.io) bundled version that makes your chatbot development experience better. By providing testing tools, an out of the box web driver implementation and additional tools like an enhanced CLI with driver installation, class generation and configuration support, it speeds up the development significantly.
-BotMan is licenses under the MIT licenses.
+BotMan is licensed under the MIT licenses.
 
 #### Donating to BotMan
 [Donate](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=m%2epociot%40googlemail%2ecom&lc=CY&item_name=BotMan&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest)
