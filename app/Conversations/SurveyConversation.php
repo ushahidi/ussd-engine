@@ -3,28 +3,43 @@
 namespace App\Conversations;
 
 use App\Messages\Outgoing\EndingMessage;
-use App\Surveys;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
+use PlatformSDK\Ushahidi;
 
 class SurveyConversation extends Conversation
 {
+    protected $sdk;
+
     protected $survey;
 
     protected $fields;
 
+    public function __construct()
+    {
+        $this->sdk = resolve(Ushahidi::class);
+    }
+
+    public function getAvailableSurveys()
+    {
+        $result = $this->sdk->getAvailableSurveys();
+
+        return $result['body']['results'];
+    }
+
     protected function askSurvey()
     {
-        $surveys = Collection::make(Surveys::load());
+        $surveys = Collection::make($this->getAvailableSurveys());
         $question = Question::create('Which form do you want to complete?')
             ->addButtons(
                 $surveys->map(function ($survey) {
-                    return Button::create($survey->name)->value($survey->id);
+                    return Button::create($survey['name'])->value($survey['id']);
                 })->all()
             );
 
@@ -36,9 +51,9 @@ class SurveyConversation extends Conversation
                 $selectedSurvey = $answer->getText();
             }
 
-            $this->survey = $surveys->firstWhere('id', $selectedSurvey);
+            $this->survey = $this->sdk->getSurvey($selectedSurvey)['body']['result'];
 
-            $this->say("Okay, loading {$this->survey->name} fields...");
+            $this->say("Okay, loading {$this->survey['name']} fields...");
 
             $this->askSurveyFields();
         });
@@ -46,10 +61,8 @@ class SurveyConversation extends Conversation
 
     protected function askSurveyFields()
     {
-        $this->fields = Collection::make($this->survey->tasks)
-                            ->pluck('fields')
-                            ->flatten()
-                            ->keyBy('id');
+        $fields = array_merge(...Arr::pluck($this->survey['tasks'], 'fields'));
+        $this->fields = Collection::make($fields)->keyBy('id');
 
         $this->checkForNextFields();
     }
@@ -82,31 +95,37 @@ class SurveyConversation extends Conversation
 
             if ($answerForField) {
                 $userId = $this->bot->getUser()->getId();
-                $key = "survey_{$this->survey->id}-{$userId}";
+                $key = "survey_{$this->survey['id']}-{$userId}";
                 $userAnswers = Cache::get($key, []);
-                $userAnswers[$field->key] = $answerForField;
+                $userAnswers[$field['key']] = $answerForField;
                 Cache::forever($key, $userAnswers);
             }
 
-            $this->fields->forget($field->id);
+            $this->fields->forget($field['id']);
             $this->checkForNextFields();
         });
     }
 
     private function createQuestionForField($field)
     {
-        $question = Question::create($field->label.':');
+        $question = Question::create($field['label'].':');
 
         return $question;
     }
 
     private function validateAnswer($field, BotManAnswer $answer)
     {
-        $validationRules = Surveys::assembleFieldValidationRules($field);
+        $validationRules = [];
+
+        if ($field['required']) {
+            $validationRules[] = 'required';
+        }
+
+        $validationRules = implode('|', $validationRules);
         $validator = Validator::make([
-            $field->key => $answer->getText(),
+            $field['key'] => $answer->getText(),
         ], [
-           $field->key => $validationRules,
+           $field['key']  => $validationRules,
         ]);
 
         if ($validator->fails()) {
@@ -129,5 +148,19 @@ class SurveyConversation extends Conversation
     public function run()
     {
         $this->askSurvey();
+    }
+
+    public function __sleep()
+    {
+        $this->sdk = null;
+
+        return parent::__sleep();
+    }
+
+    public function __wakeup()
+    {
+        $this->sdk = resolve(Ushahidi::class);
+
+        return parent::__sleep();
     }
 }
