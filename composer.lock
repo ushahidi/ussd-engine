@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "45f1fbd260fcbcc095ca88e4d33bcb1e",
+    "content-hash": "ef2ee743bc1e6118e4cc7dd914102288",
     "packages": [
         {
             "name": "botman/botman",
@@ -5161,10 +5161,16 @@
         {
             "name": "ushahidi/platform-sdk-php",
             "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ushahidi/platform-sdk-php.git",
+                "reference": "f625561a42eb0437a0f5179f724c19ab46d25bc8"
+            },
             "dist": {
-                "type": "path",
-                "url": "../platform-sdk-php",
-                "reference": "04b73f0c7b910b09b04c408c5a84be4389aad29c"
+                "type": "zip",
+                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/f625561a42eb0437a0f5179f724c19ab46d25bc8",
+                "reference": "f625561a42eb0437a0f5179f724c19ab46d25bc8",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^6.0"
@@ -5185,9 +5191,11 @@
                 }
             ],
             "description": "An SDK for the v5+ Ushahidi Platform",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/ushahidi/platform-sdk-php/tree/master",
+                "issues": "https://github.com/ushahidi/platform-sdk-php/issues"
+            },
+            "time": "2020-07-05T20:40:38+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
