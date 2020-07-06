@@ -3,6 +3,7 @@
 namespace App\Conversations;
 
 use App\Messages\Outgoing\EndingMessage;
+use App\Messages\Outgoing\FieldQuestionFactory;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -80,7 +81,7 @@ class SurveyConversation extends Conversation
 
     private function askField($field)
     {
-        $this->ask($this->createQuestionForField($field), function (BotManAnswer $answer) use ($field) {
+        $this->ask(FieldQuestionFactory::create($field), function (BotManAnswer $answer) use ($field) {
             $errors = $this->validateAnswer($field, $answer);
 
             if ($errors) {
@@ -104,13 +105,6 @@ class SurveyConversation extends Conversation
             $this->fields->forget($field['id']);
             $this->checkForNextFields();
         });
-    }
-
-    private function createQuestionForField($field)
-    {
-        $question = Question::create($field['label'].':');
-
-        return $question;
     }
 
     private function validateAnswer($field, BotManAnswer $answer)

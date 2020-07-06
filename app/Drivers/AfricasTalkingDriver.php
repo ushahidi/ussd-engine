@@ -51,7 +51,7 @@ class AfricasTalkingDriver extends WebDriver
 
     /**
      * @param $messages
-     * @return array
+     * @return string
      */
     protected function buildReply($messages)
     {
