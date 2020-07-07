@@ -2,6 +2,7 @@
 
 namespace App\Conversations;
 
+use App\Exceptions\EmptySurveysResultsException;
 use App\Messages\Outgoing\EndingMessage;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
@@ -10,12 +11,15 @@ use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PlatformSDK\Ushahidi;
 
 class SurveyConversation extends Conversation
 {
     protected $sdk;
+
+    protected $surveys;
 
     protected $survey;
 
@@ -26,19 +30,27 @@ class SurveyConversation extends Conversation
         $this->sdk = resolve(Ushahidi::class);
     }
 
-    public function getAvailableSurveys()
+    public function getAvailableSurveys(): array
     {
-        $result = $this->sdk->getAvailableSurveys();
+        try {
+            $response = $this->sdk->getAvailableSurveys();
 
-        return $result['body']['results'];
+            if (! $response['body'] || ! $response['body']['results']) {
+                throw new EmptySurveysResultsException('Empty survey results returned');
+    }
+
+            return $response['body']['results'];
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            throw $ex;
+        }
     }
 
     protected function askSurvey()
     {
-        $surveys = Collection::make($this->getAvailableSurveys());
         $question = Question::create('Which form do you want to complete?')
             ->addButtons(
-                $surveys->map(function ($survey) {
+                $this->surveys->map(function ($survey) {
                     return Button::create($survey['name'])->value($survey['id']);
                 })->all()
             );
@@ -75,7 +87,7 @@ class SurveyConversation extends Conversation
             return;
         }
 
-        $this->sendEndingMessage();
+        $this->sendEndingMessage('Thanks for submitting your response.');
     }
 
     private function askField($field)
@@ -135,9 +147,9 @@ class SurveyConversation extends Conversation
         }
     }
 
-    public function sendEndingMessage()
+    public function sendEndingMessage(string $message)
     {
-        $this->say(EndingMessage::create('Thanks for submitting your response.'));
+        $this->say(EndingMessage::create($message));
     }
 
     /**
@@ -147,7 +159,13 @@ class SurveyConversation extends Conversation
      */
     public function run()
     {
+        try {
+            $surveys = $this->getAvailableSurveys();
+            $this->surveys = Collection::make($surveys);
         $this->askSurvey();
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+        }
     }
 
     public function __sleep()
