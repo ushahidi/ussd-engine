@@ -3,14 +3,13 @@
 namespace App\Conversations;
 
 use App\Exceptions\EmptySurveysResultsException;
+use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use BotMan\BotMan\Messages\Conversations\Conversation;
-use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
+use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PlatformSDK\Ushahidi;
@@ -23,11 +22,45 @@ class SurveyConversation extends Conversation
 
     protected $survey;
 
-    protected $fields;
+    protected $tasks;
+
+    protected $postContent = [];
+
+    protected $answers = [];
 
     public function __construct()
     {
         $this->sdk = resolve(Ushahidi::class);
+    }
+
+    /**
+     * Start the conversation.
+     *
+     * @return mixed
+     */
+    public function run()
+    {
+        try {
+            $surveys = $this->getAvailableSurveys();
+            $this->surveys = Collection::make($surveys);
+            $this->askSurvey();
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+        }
+    }
+
+    public function __sleep()
+    {
+        $this->sdk = null;
+
+        return parent::__sleep();
+    }
+
+    public function __wakeup()
+    {
+        $this->sdk = resolve(Ushahidi::class);
+
+        return parent::__sleep();
     }
 
     public function getAvailableSurveys(): array
@@ -37,9 +70,25 @@ class SurveyConversation extends Conversation
 
             if (! $response['body'] || ! $response['body']['results']) {
                 throw new EmptySurveysResultsException('Empty survey results returned');
-    }
+            }
 
             return $response['body']['results'];
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            throw $ex;
+        }
+    }
+
+    public function getSurvey($id): array
+    {
+        try {
+            $response = $this->sdk->getSurvey($id);
+
+            if (! $response['body'] || ! $response['body']['result']) {
+                throw new EmptySurveysResultsException('Empty survey results returned');
+            }
+
+            return $response['body']['result'];
         } catch (\Throwable $ex) {
             Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
             throw $ex;
@@ -55,7 +104,7 @@ class SurveyConversation extends Conversation
                 })->all()
             );
 
-        $this->ask($question, function (BotManAnswer $answer) use ($surveys) {
+        $this->ask($question, function (Answer $answer) {
             // Detect if button was clicked:
             if ($answer->isInteractiveMessageReply()) {
                 $selectedSurvey = $answer->getValue();
@@ -63,36 +112,78 @@ class SurveyConversation extends Conversation
                 $selectedSurvey = $answer->getText();
             }
 
-            $this->survey = $this->sdk->getSurvey($selectedSurvey)['body']['result'];
-
-            $this->say("Okay, loading {$this->survey['name']} fields...");
-
-            $this->askSurveyFields();
+            try {
+                $this->survey = $this->getSurvey($selectedSurvey);
+                $this->say("Okay, loading {$this->survey['name']} fields...");
+                $this->askTasks();
+            } catch (\Throwable $exception) {
+                $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            }
         });
     }
 
-    protected function askSurveyFields()
+    protected function askTasks()
     {
-        $fields = array_merge(...Arr::pluck($this->survey['tasks'], 'fields'));
-        $this->fields = Collection::make($fields)->keyBy('id');
-
-        $this->checkForNextFields();
+        if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
+            $this->tasks = Collection::make([$this->survey['tasks'][0]])->keyBy('id');
+            $this->askNextTask();
+        } else {
+            Log::debug('Survey does not have tasks.', $this->survey);
+            throw new NoSurveyTasksException('Survey does not have tasks.');
+        }
     }
 
-    private function checkForNextFields()
+    private function askNextTask()
     {
-        if ($this->fields->count()) {
-            $this->askField($this->fields->first());
+        if ($this->tasks->count()) {
+            $task = $this->tasks->first();
 
-            return;
+            if (isset($task['fields']) && is_array($task['fields']) && count($task['fields'])) {
+                $this->fields = Collection::make($task['fields'])->keyBy('id');
+                $this->askFields();
+
+                return;
+            }
         }
+
+        $this->sendResponseToPlatform();
 
         $this->sendEndingMessage('Thanks for submitting your response.');
     }
 
-    private function askField($field)
+    public function askFields()
     {
-        $this->ask($this->createQuestionForField($field), function (BotManAnswer $answer) use ($field) {
+        if ($this->fields->count()) {
+            $this->askNextField();
+        }
+    }
+
+    private function askNextField()
+    {
+        if ($this->fields->count()) {
+            $this->askField($this->fields->first());
+        } else {
+            $this->buildTaskResponse();
+            $this->tasks->forget($this->tasks->first()['id']);
+            $this->askNextTask();
+        }
+    }
+
+    private function buildTaskResponse()
+    {
+        $currentTask = $this->tasks->first();
+        $this->postContent[] = [
+            'id' => $currentTask['id'],
+            'type' => $currentTask['type'],
+            'fields' => $this->answers,
+        ];
+
+        $this->answers = [];
+    }
+
+    private function askField(array $field)
+    {
+        $this->ask($this->createQuestionForField($field), function (Answer $answer) use ($field) {
             $errors = $this->validateAnswer($field, $answer);
 
             if ($errors) {
@@ -106,26 +197,26 @@ class SurveyConversation extends Conversation
             $answerForField = $answer->getText();
 
             if ($answerForField) {
-                $userId = $this->bot->getUser()->getId();
-                $key = "survey_{$this->survey['id']}-{$userId}";
-                $userAnswers = Cache::get($key, []);
-                $userAnswers[$field['key']] = $answerForField;
-                Cache::forever($key, $userAnswers);
+                $this->answers[] = [
+                    'id' => $field['id'],
+                    'type' => $field['type'],
+                    'value' => $answerForField,
+                ];
             }
 
             $this->fields->forget($field['id']);
-            $this->checkForNextFields();
+            $this->askNextField();
         });
     }
 
-    private function createQuestionForField($field)
+    private function createQuestionForField(array $field)
     {
         $question = Question::create($field['label'].':');
 
         return $question;
     }
 
-    private function validateAnswer($field, BotManAnswer $answer)
+    private function validateAnswer($field, Answer $answer)
     {
         $validationRules = [];
 
@@ -152,33 +243,26 @@ class SurveyConversation extends Conversation
         $this->say(EndingMessage::create($message));
     }
 
-    /**
-     * Start the conversation.
-     *
-     * @return mixed
-     */
-    public function run()
+    public function sendResponseToPlatform()
     {
+        $post = [
+            'title' => '',
+            'locale' => 'en_US',
+            'post_content' => $this->postContent,
+            'form_id' => $this->survey['id'],
+            'type' => 'report',
+            'completed_stages' => [],
+            'published_to' => [],
+            'post_date' => now()->toISOString(),
+            'enabled_languages' => [],
+            'content' => '',
+        ];
+
         try {
-            $surveys = $this->getAvailableSurveys();
-            $this->surveys = Collection::make($surveys);
-        $this->askSurvey();
-        } catch (\Throwable $exception) {
-            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            $this->sdk->createPost($post);
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't save post: ".$ex->getMessage());
+            throw $ex;
         }
-    }
-
-    public function __sleep()
-    {
-        $this->sdk = null;
-
-        return parent::__sleep();
-    }
-
-    public function __wakeup()
-    {
-        $this->sdk = resolve(Ushahidi::class);
-
-        return parent::__sleep();
     }
 }
