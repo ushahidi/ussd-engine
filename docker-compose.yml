@@ -1,0 +1,12 @@
+version: "2"
+services:
+  redis:
+    image: redis:4-alpine
+  ussd-engine:
+    build: .
+    environment:
+      DOCKERIZE_WAIT_FOR_redis: tcp://redis:6379
+      REDIS_HOST: redis
+    command: start
+    ports:
+      - "80:8080"
