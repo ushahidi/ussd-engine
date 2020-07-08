@@ -12,7 +12,7 @@ use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
 
 class SurveyConversation extends Conversation
@@ -184,10 +184,13 @@ class SurveyConversation extends Conversation
 
     private function askField(array $field)
     {
-        $this->ask(FieldQuestionFactory::create($field), function (Answer $answer) use ($field) {
-            $errors = $this->validateAnswer($field, $answer);
-
-            if ($errors) {
+        $question = FieldQuestionFactory::create($field);
+        $this->ask($question, function (Answer $answer) use ($question, $field) {
+            try {
+                $question->setAnswer($answer);
+                $this->answers[] = $question->getAnswerResponse();
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
                     $this->say($error);
                 }
@@ -195,41 +198,9 @@ class SurveyConversation extends Conversation
                 return $this->repeat();
             }
 
-            $answerForField = $answer->getText();
-
-            if ($answerForField) {
-                $this->answers[] = [
-                    'id' => $field['id'],
-                    'type' => $field['type'],
-                    'value' => $answerForField,
-                ];
-            }
-
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
-    }
-
-    private function validateAnswer($field, Answer $answer)
-    {
-        $validationRules = [];
-
-        if ($field['required']) {
-            $validationRules[] = 'required';
-        }
-
-        $validationRules = implode('|', $validationRules);
-        $validator = Validator::make([
-            $field['key'] => $answer->getText(),
-        ], [
-           $field['key']  => $validationRules,
-        ]);
-
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
-            return $errors;
-        }
     }
 
     public function sendEndingMessage(string $message)
