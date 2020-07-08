@@ -147,9 +147,12 @@ class SurveyConversation extends Conversation
             }
         }
 
-        $this->sendResponseToPlatform();
-
-        $this->sendEndingMessage('Thanks for submitting your response.');
+        try {
+            $this->sendResponseToPlatform();
+            $this->sendEndingMessage('Thanks for submitting your response.');
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+        }
     }
 
     public function askFields()
@@ -210,8 +213,10 @@ class SurveyConversation extends Conversation
 
     public function sendResponseToPlatform()
     {
+        $titleField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'title');
+        $descriptionField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'description');
         $post = [
-            'title' => '',
+            'title' => $titleField ? $titleField['value'] : null,
             'locale' => 'en_US',
             'post_content' => $this->postContent,
             'form_id' => $this->survey['id'],
@@ -220,7 +225,7 @@ class SurveyConversation extends Conversation
             'published_to' => [],
             'post_date' => now()->toISOString(),
             'enabled_languages' => [],
-            'content' => '',
+            'content' => $descriptionField ? $descriptionField['value'] : null,
         ];
 
         try {
