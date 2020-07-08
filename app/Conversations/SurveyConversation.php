@@ -146,9 +146,12 @@ class SurveyConversation extends Conversation
             }
         }
 
-        $this->sendResponseToPlatform();
-
-        $this->sendEndingMessage('Thanks for submitting your response.');
+        try {
+            $this->sendResponseToPlatform();
+            $this->sendEndingMessage('Thanks for submitting your response.');
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+        }
     }
 
     public function askFields()
