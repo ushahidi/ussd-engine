@@ -6,6 +6,7 @@ use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
+use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -98,19 +99,25 @@ class SurveyConversation extends Conversation
 
     protected function askSurvey()
     {
-        $question = Question::create('Which form do you want to complete?')
-            ->addButtons(
-                $this->surveys->map(function ($survey) {
-                    return Button::create($survey['name'])->value($survey['id']);
-                })->all()
-            );
+        $field = [
+            'label' => 'Which form do you want to complete?',
+            'key' => 'survey',
+            'required' => true,
+            'options' => $this->surveys,
+        ];
+        $question = new SelectQuestion($field, 'id', 'name');
 
-        $this->ask($question, function (Answer $answer) {
-            // Detect if button was clicked:
-            if ($answer->isInteractiveMessageReply()) {
-                $selectedSurvey = $answer->getValue();
-            } else {
-                $selectedSurvey = $answer->getText();
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedSurvey = $question->getAnswerResponse()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->repeat();
             }
 
             try {
