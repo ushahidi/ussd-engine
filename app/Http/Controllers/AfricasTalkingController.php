@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Conversations\SurveyConversation;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AfricasTalkingController extends Controller
 {
@@ -18,6 +18,7 @@ class AfricasTalkingController extends Controller
         try {
             $botman->listen();
         } catch (\Exception $e) {
+            Log::error($e->getMessage());
             $botman->reply('Something went wrong.');
         }
     }
