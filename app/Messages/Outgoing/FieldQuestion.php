@@ -6,7 +6,7 @@ use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Facades\Validator;
 
-class FieldQuestion extends Question implements FieldQuestionInterface
+abstract class FieldQuestion extends Question implements FieldQuestionInterface
 {
     protected $field;
 
@@ -14,49 +14,32 @@ class FieldQuestion extends Question implements FieldQuestionInterface
     {
         $this->field = $field;
 
-        parent::__construct($this->field['label']);
+        parent::__construct($this->getTextContent());
     }
+
+    public function getTextContent(): string
+    {
+        return $this->field['label'];
+    }
+
+    abstract public function getAnswerBody(Answer $answer): array;
 
     public function setAnswer(Answer $answer)
     {
-        $validated = $this->validate($answer);
+        $validated = $this->validate($this->getAnswerBody($answer));
         $this->answerValue = $validated[$this->field['key']];
     }
 
-    public function validate(Answer $answer)
+    public function validate(array $body)
     {
         $rules = $this->getRules();
 
-        $validator = Validator::make([
-            $this->field['key'] => $answer->getText(),
-        ], $rules);
+        $validator = Validator::make($body, $rules);
 
         return $validator->validate();
     }
 
-    public function getRules(): array
-    {
-        $validationRules = [];
+    abstract public function getRules(): array;
 
-        if ($this->field['required']) {
-            $validationRules[] = 'required';
-        }
-
-        $validationRules = implode('|', $validationRules);
-
-        $rules = [
-          $this->field['key']  => $validationRules,
-        ];
-
-        return $rules;
-    }
-
-    public function getAnswerResponse(): array
-    {
-        return [
-          'id' => $this->field['id'],
-          'type' => $this->field['type'],
-          'value' => $this->answerValue,
-        ];
-    }
+    abstract public function getAnswerResponse(): array;
 }
