@@ -6,6 +6,6 @@ class FieldQuestionFactory
 {
     public static function create(array $field): FieldQuestion
     {
-        return new FieldQuestion($field);
+        return new TextQuestion($field);
     }
 }
