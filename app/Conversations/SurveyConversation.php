@@ -16,18 +16,61 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
 
+/**
+ * This Conversation defines all interaction with the user when filling a form.
+ *
+ * Instances of this class are stateful, they are serialized and cached before each
+ * response is sent and restored on each incoming request.
+ *
+ * All inside this class should be able to serialize.
+ */
 class SurveyConversation extends Conversation
 {
+    /**
+     * Ushahidi Platform SDK instance.
+     *
+     * @var \PlatformSDK\Ushahidi
+     */
     protected $sdk;
 
+    /**
+     * All available surveys.
+     *
+     * @var Illuminate\Support\Collection
+     */
     protected $surveys;
 
+    /**
+     * Selected survey.
+     *
+     * @var array
+     */
     protected $survey;
 
+    /**
+     * Selected survey tasks.
+     * @var Illuminate\Support\Collection
+     */
     protected $tasks;
 
+    /**
+     * Per tasks responses.
+     *
+     * @var array
+     */
     protected $postContent = [];
 
+    /**
+     * Array of each task fields.
+     * @var Illuminate\Support\Collection
+     */
+    protected $fields;
+
+    /**
+     * Array of each task responses.
+     * Gets empty after each task is completed.
+     * @var array
+     */
     protected $answers = [];
 
     public function __construct()
@@ -38,6 +81,8 @@ class SurveyConversation extends Conversation
     /**
      * Start the conversation.
      *
+     * This method is called by Botman.
+     *
      * @return mixed
      */
     public function run()
@@ -47,10 +92,15 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askSurvey();
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            $this->sendEndingMessage(__('oops'));
         }
     }
 
+    /**
+     * Remove dependencies before serialization.
+     *
+     * @return array
+     */
     public function __sleep()
     {
         $this->sdk = null;
@@ -58,6 +108,9 @@ class SurveyConversation extends Conversation
         return parent::__sleep();
     }
 
+    /**
+     * Attach dependencies after unserialization.
+     */
     public function __wakeup()
     {
         $this->sdk = resolve(Ushahidi::class);
@@ -65,6 +118,11 @@ class SurveyConversation extends Conversation
         return parent::__sleep();
     }
 
+    /**
+     * Fetch all available surveys from the Ushahidi platform.
+     *
+     * @return array
+     */
     public function getAvailableSurveys(): array
     {
         try {
@@ -81,7 +139,13 @@ class SurveyConversation extends Conversation
         }
     }
 
-    public function getSurvey($id): array
+    /**
+     * Fetchs information about a survey using the survey id.
+     *
+     * @param int $id
+     * @return array
+     */
+    public function getSurvey(int $id): array
     {
         try {
             $response = $this->sdk->getSurvey($id);
@@ -97,6 +161,11 @@ class SurveyConversation extends Conversation
         }
     }
 
+    /**
+     * Ask the user to select a survey and handle the user input.
+     *
+     * @return void
+     */
     protected function askSurvey()
     {
         $field = [
@@ -122,14 +191,19 @@ class SurveyConversation extends Conversation
 
             try {
                 $this->survey = $this->getSurvey($selectedSurvey);
-                $this->say("Okay, loading {$this->survey['name']} fields...");
+                $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
                 $this->askTasks();
             } catch (\Throwable $exception) {
-                $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+                $this->sendEndingMessage(__('oops'));
             }
         });
     }
 
+    /**
+     * Set and start asking each of the tasks in the selected survey.
+     *
+     * @return void
+     */
     protected function askTasks()
     {
         if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
@@ -141,6 +215,12 @@ class SurveyConversation extends Conversation
         }
     }
 
+    /**
+     * Check is there is any tasks that have not been asked yet and ask it.
+     * If all tasks has been asked, then send the responses to the Ushahidi Platform.
+     *
+     * @return void
+     */
     private function askNextTask()
     {
         if ($this->tasks->count()) {
@@ -156,12 +236,17 @@ class SurveyConversation extends Conversation
 
         try {
             $this->sendResponseToPlatform();
-            $this->sendEndingMessage('Thanks for submitting your response.');
+            $this->sendEndingMessage(__('thanksForSubmitting'));
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            $this->sendEndingMessage(__('oops'));
         }
     }
 
+    /**
+     * Ask each field on the current task.
+     *
+     * @return void
+     */
     public function askFields()
     {
         if ($this->fields->count()) {
@@ -169,6 +254,12 @@ class SurveyConversation extends Conversation
         }
     }
 
+    /**
+     * Ask each field on the current task.
+     * If there are no fields to be asked, then it builds the responses for the current taks.
+     *
+     * @return void
+     */
     private function askNextField()
     {
         if ($this->fields->count()) {
@@ -180,6 +271,11 @@ class SurveyConversation extends Conversation
         }
     }
 
+    /**
+     * Take all the collected answers for the current task and push them to the post content.
+     *
+     * @return void
+     */
     private function buildTaskResponse()
     {
         $currentTask = $this->tasks->first();
@@ -192,6 +288,12 @@ class SurveyConversation extends Conversation
         $this->answers = [];
     }
 
+    /**
+     * Create a question from the provided field, ask it and handle the user answer.
+     *
+     * @param array $field
+     * @return void
+     */
     private function askField(array $field)
     {
         $question = FieldQuestionFactory::create($field);
@@ -213,11 +315,22 @@ class SurveyConversation extends Conversation
         });
     }
 
+    /**
+     * Send ending message using the provided text.
+     *
+     * @param string $message
+     * @return void
+     */
     public function sendEndingMessage(string $message)
     {
         $this->say(EndingMessage::create($message));
     }
 
+    /**
+     * Post the collected responses to the Ushahidi Platform.
+     *
+     * @return void
+     */
     public function sendResponseToPlatform()
     {
         $titleField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'title');
