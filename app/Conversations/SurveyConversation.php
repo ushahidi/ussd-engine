@@ -97,7 +97,7 @@ class SurveyConversation extends Conversation
 
     protected function askSurvey()
     {
-        $question = Question::create('Which form do you want to complete?')
+        $question = Question::create(__('conversation.selectSurvey'))
             ->addButtons(
                 $this->surveys->map(function ($survey) {
                     return Button::create($survey['name'])->value($survey['id']);
@@ -114,10 +114,10 @@ class SurveyConversation extends Conversation
 
             try {
                 $this->survey = $this->getSurvey($selectedSurvey);
-                $this->say("Okay, loading {$this->survey['name']} fields...");
+                $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
                 $this->askTasks();
             } catch (\Throwable $exception) {
-                $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+                $this->sendEndingMessage(__('oops'));
             }
         });
     }
@@ -148,9 +148,9 @@ class SurveyConversation extends Conversation
 
         try {
             $this->sendResponseToPlatform();
-            $this->sendEndingMessage('Thanks for submitting your response.');
+            $this->sendEndingMessage(__('thanksForSubmitting'));
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            $this->sendEndingMessage(__('oops'));
         }
     }
 
