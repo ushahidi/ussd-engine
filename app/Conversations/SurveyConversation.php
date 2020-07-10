@@ -45,7 +45,7 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askSurvey();
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage('Oops, something went wrong on our side. Try again later.');
+            $this->sendEndingMessage(__('oops'));
         }
     }
 
