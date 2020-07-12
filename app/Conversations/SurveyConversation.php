@@ -90,7 +90,7 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askSurvey();
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage(__('oops'));
+            $this->sendEndingMessage(__('conversation.oops'));
         }
     }
 
@@ -186,7 +186,7 @@ class SurveyConversation extends Conversation
                 $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
                 $this->askTasks();
             } catch (\Throwable $exception) {
-                $this->sendEndingMessage(__('oops'));
+                $this->sendEndingMessage(__('conversation.oops'));
             }
         });
     }
@@ -228,9 +228,9 @@ class SurveyConversation extends Conversation
 
         try {
             $this->sendResponseToPlatform();
-            $this->sendEndingMessage(__('thanksForSubmitting'));
+            $this->sendEndingMessage(__('conversation.thanksForSubmitting'));
         } catch (\Throwable $exception) {
-            $this->sendEndingMessage(__('oops'));
+            $this->sendEndingMessage(__('conversation.oops'));
         }
     }
 
