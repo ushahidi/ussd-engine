@@ -239,14 +239,19 @@ class SurveyConversation extends Conversation
 
             try {
                 $this->survey = $this->getSurvey($selectedSurvey);
-                $this->askLanguage();
+                $this->askSurveyLanguage();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         });
     }
 
-    protected function askLanguage()
+    /**
+     * Ask the user to select one of the available languages for the selected survey.
+     *
+     * @return void
+     */
+    protected function askSurveyLanguage()
     {
         $field = [
             'label' => __('conversation.chooseALanguage'),
@@ -267,7 +272,7 @@ class SurveyConversation extends Conversation
                     $this->say($error);
                 }
 
-                return $this->repeat();
+                return $this->askCancelOrGoToListOfSurveys();
             }
 
             try {
