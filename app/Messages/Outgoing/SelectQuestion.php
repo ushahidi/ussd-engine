@@ -65,7 +65,7 @@ class SelectQuestion extends FieldQuestion
     public function getAnswerResponse(): array
     {
         return [
-          'value' => $this->optionsMap[$this->answerValue],
+          'value' => $this->answerValue ? $this->optionsMap[$this->answerValue] : null,
         ];
     }
 }
