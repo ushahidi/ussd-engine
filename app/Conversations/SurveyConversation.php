@@ -74,6 +74,8 @@ class SurveyConversation extends Conversation
 
     protected $selectedLanguage;
 
+    protected $userCanAskForInfo = true;
+
     public function __construct()
     {
         $this->sdk = resolve(Ushahidi::class);
@@ -303,6 +305,7 @@ class SurveyConversation extends Conversation
     private function askNextField()
     {
         if ($this->fields->count()) {
+            $this->userCanAskForInfo = true;
             $this->askField($this->fields->first());
         } else {
             $this->buildTaskResponse();
@@ -338,10 +341,17 @@ class SurveyConversation extends Conversation
     {
         $question = FieldQuestionFactory::create($field);
         $this->ask($question, function (Answer $answer) use ($question, $field) {
+            if (trim($answer->getText()) === '?' && $this->userCanAskForInfo) {
+                $this->userCanAskForInfo = false;
+
+                return $this->repeat($question->getMoreInfoContent());
+            }
             try {
                 $question->setAnswer($answer);
                 $this->answers[] = $question->getAnswerResponse();
             } catch (ValidationException $exception) {
+                $this->userCanAskForInfo = true;
+
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
                     $this->say($error);
@@ -353,6 +363,7 @@ class SurveyConversation extends Conversation
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
+        $this->say(__('conversation.showMoreInfo'));
     }
 
     /**

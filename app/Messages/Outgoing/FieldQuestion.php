@@ -20,11 +20,12 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     public function getTextContent(): string
     {
-        $locale = App::getLocale();
+        return $this->__('label');
+    }
 
-        $context = isset($this->field['translations'][$locale]) ? $this->field['translations'][$locale] : $this->field;
-
-        return $context['label'];
+    public function getMoreInfoContent(): string
+    {
+        return $this->__('instructions');
     }
 
     abstract public function getAnswerBody(Answer $answer): array;
@@ -53,6 +54,14 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
             'type' => $this->field['type'],
             'value' => $this->getAnswerValue(),
           ];
+    }
+
+    public function __(string $accesor): string
+    {
+        $locale = App::getLocale();
+        $translations = isset($this->field['translations'][$locale]) ? $this->field['translations'][$locale] : [];
+
+        return (string) (isset($translations[$accesor]) ? $translations[$accesor] : $this->field[$accesor]);
     }
 
     abstract public function getAnswerValue();
