@@ -2,33 +2,178 @@
 
 namespace App\Conversations;
 
+use App\Exceptions\EmptySurveysResultsException;
+use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
-use App\Surveys;
 use BotMan\BotMan\Messages\Conversations\Conversation;
-use BotMan\BotMan\Messages\Incoming\Answer as BotManAnswer;
+use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use PlatformSDK\Ushahidi;
 
+/**
+ * This Conversation defines all interaction with the user when filling a form.
+ *
+ * Instances of this class are stateful, they are serialized and cached before each
+ * response is sent and restored on each incoming request.
+ *
+ * All inside this class should be able to serialize.
+ */
 class SurveyConversation extends Conversation
 {
+    /**
+     * Ushahidi Platform SDK instance.
+     *
+     * @var \PlatformSDK\Ushahidi
+     */
+    protected $sdk;
+
+    /**
+     * All available surveys.
+     *
+     * @var Illuminate\Support\Collection
+     */
+    protected $surveys;
+
+    /**
+     * Selected survey.
+     *
+     * @var array
+     */
     protected $survey;
 
+    /**
+     * Selected survey tasks.
+     * @var Illuminate\Support\Collection
+     */
+    protected $tasks;
+
+    /**
+     * Per tasks responses.
+     *
+     * @var array
+     */
+    protected $postContent = [];
+
+    /**
+     * Array of each task fields.
+     * @var Illuminate\Support\Collection
+     */
     protected $fields;
 
+    /**
+     * Array of each task responses.
+     * Gets empty after each task is completed.
+     * @var array
+     */
+    protected $answers = [];
+
+    public function __construct()
+    {
+        $this->sdk = resolve(Ushahidi::class);
+    }
+
+    /**
+     * Start the conversation.
+     *
+     * This method is called by Botman.
+     *
+     * @return mixed
+     */
+    public function run()
+    {
+        try {
+            $surveys = $this->getAvailableSurveys();
+            $this->surveys = Collection::make($surveys);
+            $this->askSurvey();
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage(__('conversation.oops'));
+        }
+    }
+
+    /**
+     * Remove dependencies before serialization.
+     *
+     * @return array
+     */
+    public function __sleep()
+    {
+        $this->sdk = null;
+
+        return parent::__sleep();
+    }
+
+    /**
+     * Attach dependencies after unserialization.
+     */
+    public function __wakeup()
+    {
+        $this->sdk = resolve(Ushahidi::class);
+
+        return parent::__sleep();
+    }
+
+    /**
+     * Fetch all available surveys from the Ushahidi platform.
+     *
+     * @return array
+     */
+    public function getAvailableSurveys(): array
+    {
+        try {
+            $response = $this->sdk->getAvailableSurveys();
+
+            if (! $response['body'] || ! $response['body']['results']) {
+                throw new EmptySurveysResultsException('Empty survey results returned');
+            }
+
+            return $response['body']['results'];
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            throw $ex;
+        }
+    }
+
+    /**
+     * Fetchs information about a survey using the survey id.
+     *
+     * @param int $id
+     * @return array
+     */
+    public function getSurvey(int $id): array
+    {
+        try {
+            $response = $this->sdk->getSurvey($id);
+
+            if (! $response['body'] || ! $response['body']['result']) {
+                throw new EmptySurveysResultsException('Empty survey results returned');
+            }
+
+            return $response['body']['result'];
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            throw $ex;
+        }
+    }
+
+    /**
+     * Ask the user to select a survey and handle the user input.
+     *
+     * @return void
+     */
     protected function askSurvey()
     {
-        $surveys = Collection::make(Surveys::load());
-        $question = Question::create('Which form do you want to complete?')
+        $question = Question::create(__('conversation.selectSurvey'))
             ->addButtons(
-                $surveys->map(function ($survey) {
-                    return Button::create($survey->name)->value($survey->id);
+                $this->surveys->map(function ($survey) {
+                    return Button::create($survey['name'])->value($survey['id']);
                 })->all()
             );
 
-        $this->ask($question, function (BotManAnswer $answer) use ($surveys) {
+        $this->ask($question, function (Answer $answer) {
             // Detect if button was clicked:
             if ($answer->isInteractiveMessageReply()) {
                 $selectedSurvey = $answer->getValue();
@@ -36,38 +181,114 @@ class SurveyConversation extends Conversation
                 $selectedSurvey = $answer->getText();
             }
 
-            $this->survey = $surveys->firstWhere('id', $selectedSurvey);
-
-            $this->say("Okay, loading {$this->survey->name} fields...");
-
-            $this->askSurveyFields();
+            try {
+                $this->survey = $this->getSurvey($selectedSurvey);
+                $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
+                $this->askTasks();
+            } catch (\Throwable $exception) {
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
         });
     }
 
-    protected function askSurveyFields()
+    /**
+     * Set and start asking each of the tasks in the selected survey.
+     *
+     * @return void
+     */
+    protected function askTasks()
     {
-        $this->fields = Collection::make($this->survey->tasks)
-                            ->pluck('fields')
-                            ->flatten()
-                            ->keyBy('id');
-
-        $this->checkForNextFields();
+        if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
+            $this->tasks = Collection::make([$this->survey['tasks'][0]])->keyBy('id');
+            $this->askNextTask();
+        } else {
+            Log::debug('Survey does not have tasks.', $this->survey);
+            throw new NoSurveyTasksException('Survey does not have tasks.');
+        }
     }
 
-    private function checkForNextFields()
+    /**
+     * Check is there is any tasks that have not been asked yet and ask it.
+     * If all tasks has been asked, then send the responses to the Ushahidi Platform.
+     *
+     * @return void
+     */
+    private function askNextTask()
+    {
+        if ($this->tasks->count()) {
+            $task = $this->tasks->first();
+
+            if (isset($task['fields']) && is_array($task['fields']) && count($task['fields'])) {
+                $this->fields = Collection::make($task['fields'])->keyBy('id');
+                $this->askFields();
+
+                return;
+            }
+        }
+
+        try {
+            $this->sendResponseToPlatform();
+            $this->sendEndingMessage(__('conversation.thanksForSubmitting'));
+        } catch (\Throwable $exception) {
+            $this->sendEndingMessage(__('conversation.oops'));
+        }
+    }
+
+    /**
+     * Ask each field on the current task.
+     *
+     * @return void
+     */
+    public function askFields()
+    {
+        if ($this->fields->count()) {
+            $this->askNextField();
+        }
+    }
+
+    /**
+     * Ask each field on the current task.
+     * If there are no fields to be asked, then it builds the responses for the current taks.
+     *
+     * @return void
+     */
+    private function askNextField()
     {
         if ($this->fields->count()) {
             $this->askField($this->fields->first());
-
-            return;
+        } else {
+            $this->buildTaskResponse();
+            $this->tasks->forget($this->tasks->first()['id']);
+            $this->askNextTask();
         }
-
-        $this->sendEndingMessage();
     }
 
-    private function askField($field)
+    /**
+     * Take all the collected answers for the current task and push them to the post content.
+     *
+     * @return void
+     */
+    private function buildTaskResponse()
     {
-        $this->ask($this->createQuestionForField($field), function (BotManAnswer $answer) use ($field) {
+        $currentTask = $this->tasks->first();
+        $this->postContent[] = [
+            'id' => $currentTask['id'],
+            'type' => $currentTask['type'],
+            'fields' => $this->answers,
+        ];
+
+        $this->answers = [];
+    }
+
+    /**
+     * Create a question from the provided field, ask it and handle the user answer.
+     *
+     * @param array $field
+     * @return void
+     */
+    private function askField(array $field)
+    {
+        $this->ask($this->createQuestionForField($field), function (Answer $answer) use ($field) {
             $errors = $this->validateAnswer($field, $answer);
 
             if ($errors) {
@@ -81,32 +302,52 @@ class SurveyConversation extends Conversation
             $answerForField = $answer->getText();
 
             if ($answerForField) {
-                $userId = $this->bot->getUser()->getId();
-                $key = "survey_{$this->survey->id}-{$userId}";
-                $userAnswers = Cache::get($key, []);
-                $userAnswers[$field->key] = $answerForField;
-                Cache::forever($key, $userAnswers);
+                $this->answers[] = [
+                    'id' => $field['id'],
+                    'type' => $field['type'],
+                    'value' => $answerForField,
+                ];
             }
 
-            $this->fields->forget($field->id);
-            $this->checkForNextFields();
+            $this->fields->forget($field['id']);
+            $this->askNextField();
         });
     }
 
-    private function createQuestionForField($field)
+    /**
+     * Creates a question using the provided field information.
+     *
+     * @param array $field
+     * @return void
+     */
+    private function createQuestionForField(array $field)
     {
-        $question = Question::create($field->label.':');
+        $question = Question::create($field['label'].':');
 
         return $question;
     }
 
-    private function validateAnswer($field, BotManAnswer $answer)
+    /**
+     * Validate answer according to rules of the provided field.
+     * Returns errors if any.
+     *
+     * @param array $field
+     * @param Answer $answer
+     * @return array
+     */
+    private function validateAnswer(array $field, Answer $answer)
     {
-        $validationRules = Surveys::assembleFieldValidationRules($field);
+        $validationRules = [];
+
+        if ($field['required']) {
+            $validationRules[] = 'required';
+        }
+
+        $validationRules = implode('|', $validationRules);
         $validator = Validator::make([
-            $field->key => $answer->getText(),
+            $field['key'] => $answer->getText(),
         ], [
-           $field->key => $validationRules,
+           $field['key']  => $validationRules,
         ]);
 
         if ($validator->fails()) {
@@ -116,18 +357,44 @@ class SurveyConversation extends Conversation
         }
     }
 
-    public function sendEndingMessage()
+    /**
+     * Send ending message using the provided text.
+     *
+     * @param string $message
+     * @return void
+     */
+    public function sendEndingMessage(string $message)
     {
-        $this->say(EndingMessage::create('Thanks for submitting your response.'));
+        $this->say(EndingMessage::create($message));
     }
 
     /**
-     * Start the conversation.
+     * Post the collected responses to the Ushahidi Platform.
      *
-     * @return mixed
+     * @return void
      */
-    public function run()
+    public function sendResponseToPlatform()
     {
-        $this->askSurvey();
+        $titleField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'title');
+        $descriptionField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'description');
+        $post = [
+            'title' => $titleField ? $titleField['value'] : null,
+            'locale' => 'en_US',
+            'post_content' => $this->postContent,
+            'form_id' => $this->survey['id'],
+            'type' => 'report',
+            'completed_stages' => [],
+            'published_to' => [],
+            'post_date' => now()->toISOString(),
+            'enabled_languages' => [],
+            'content' => $descriptionField ? $descriptionField['value'] : null,
+        ];
+
+        try {
+            $this->sdk->createPost($post);
+        } catch (\Throwable $ex) {
+            Log::error("Couldn't save post: ".$ex->getMessage());
+            throw $ex;
+        }
     }
 }

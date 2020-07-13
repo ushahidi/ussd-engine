@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "06d37a8f1a9d883efb5e2a401d8c7639",
+    "content-hash": "ef2ee743bc1e6118e4cc7dd914102288",
     "packages": [
         {
             "name": "botman/botman",
@@ -5159,6 +5159,45 @@
             "time": "2019-10-24T08:53:34+00:00"
         },
         {
+            "name": "ushahidi/platform-sdk-php",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ushahidi/platform-sdk-php.git",
+                "reference": "f625561a42eb0437a0f5179f724c19ab46d25bc8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/f625561a42eb0437a0f5179f724c19ab46d25bc8",
+                "reference": "f625561a42eb0437a0f5179f724c19ab46d25bc8",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PlatformSDK\\": "src/"
+                }
+            },
+            "license": [
+                "AGPLv3"
+            ],
+            "authors": [
+                {
+                    "name": "Technology team",
+                    "email": "technologyteam@ushahidi.com"
+                }
+            ],
+            "description": "An SDK for the v5+ Ushahidi Platform",
+            "support": {
+                "source": "https://github.com/ushahidi/platform-sdk-php/tree/master",
+                "issues": "https://github.com/ushahidi/platform-sdk-php/issues"
+            },
+            "time": "2020-07-05T20:40:38+00:00"
+        },
+        {
             "name": "vlucas/phpdotenv",
             "version": "v2.6.5",
             "source": {
@@ -7079,7 +7118,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {
+        "ushahidi/platform-sdk-php": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

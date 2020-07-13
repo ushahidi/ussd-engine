@@ -12,9 +12,14 @@ use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * A Driver to handle incoming requests from Africa's Talking
+ * USSD gateway.
+ */
 class AfricasTalkingDriver extends WebDriver
 {
     /**
+     * Build payload from incoming request.
      * @param Request $request
      */
     public function buildPayload(Request $request)
@@ -34,10 +39,13 @@ class AfricasTalkingDriver extends WebDriver
     }
 
     /**
+     * Take outgoing messages from Botman and build payload for the service.
+     *
      * @param string|Question|OutgoingMessage $message
      * @param IncomingMessage $matchingMessage
      * @param array $additionalParameters
-     * @return Response
+     *
+     * @return string|Question|OutgoingMessage
      */
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
@@ -50,8 +58,10 @@ class AfricasTalkingDriver extends WebDriver
     }
 
     /**
+     * Take all the outgoing messages and build a reply understandable by
+     * Africa's Talking USSD gateway.
      * @param $messages
-     * @return array
+     * @return string
      */
     protected function buildReply($messages)
     {
@@ -65,6 +75,8 @@ class AfricasTalkingDriver extends WebDriver
                     $replies[] = $messageData['text'];
                 } elseif ($messageData['type'] === 'actions') {
                     $replies[] = $messageData['text'];
+
+                    // Convert message actions to list of options
                     foreach ($messageData['actions'] as $action) {
                         $replies[] = "Send {$action['value']} for {$action['text']}.";
                     }
@@ -98,7 +110,12 @@ class AfricasTalkingDriver extends WebDriver
         Response::create($response, $this->replyStatusCode, ['Content-Type' => 'text/plain'])->send();
     }
 
-    public function matchesRequest()
+    /**
+     * Returns true if incoming request matches the expected by this driver.
+     *
+     * @return bool
+     */
+    public function matchesRequest(): bool
     {
         $africasTalkingKeys = ['sessionId', 'phoneNumber', 'networkCode', 'serviceCode', 'text'];
 
@@ -111,7 +128,13 @@ class AfricasTalkingDriver extends WebDriver
         return true;
     }
 
-    private function splitMessage(string $message)
+    /**
+     * Split message sent by AF and returns just the last one.
+     *
+     * @param string $message
+     * @return string
+     */
+    private function splitMessage(string $message): string
     {
         $parts = explode('*', $message);
 
