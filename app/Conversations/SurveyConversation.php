@@ -9,6 +9,8 @@ use App\Messages\Outgoing\FieldQuestionFactory;
 use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
+use BotMan\BotMan\Messages\Outgoing\Actions\Button;
+use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
@@ -188,7 +190,7 @@ class SurveyConversation extends Conversation
                     $this->say($error);
                 }
 
-                return $this->repeat();
+                return $this->askCancelOrGoToListOfSurveys();
             }
 
             try {
@@ -400,6 +402,68 @@ class SurveyConversation extends Conversation
             $this->askNextField();
         });
         $this->say(__('conversation.showMoreInfo'));
+    }
+
+    /**
+     * Prompt the user to cancel or go to the list of surveys
+     * using the decision question function.
+     *
+     * @return void
+     */
+    protected function askCancelOrGoToListOfSurveys()
+    {
+        // The callback should be a method available in this class
+        $options = [
+            [
+                'display' => __('conversation.cancel'),
+                'value' =>  __('conversation.cancelValue'),
+                'callback' => 'cancelConversation',
+            ],
+            [
+                'display' => __('conversation.goToListOfSurveys'),
+                'value' => __('conversation.goToListOfSurveysValue'),
+                'callback' => 'askSurvey',
+            ],
+        ];
+
+        return $this->askDecision(__('conversation.whatDoYouWantToDo'), $options);
+    }
+
+    /**
+     * Create and aks a question with desicion options, if one of the options is choosen
+     * the callback for the option gets called.
+     *
+     * @param string $text
+     * @param array $options
+     * @return void
+     */
+    protected function askDecision(string $text = null, array $options)
+    {
+        $question = Question::create($text);
+        $question->addButtons(array_map(function ($option) {
+            return Button::create($option['display'])->value($option['value']);
+        }, $options));
+
+        $this->ask($question, function (Answer $answer) use ($options) {
+            $selectedOption = Collection::make($options)->firstWhere('value', trim($answer->getText()));
+            if (! $selectedOption) {
+                $this->say(__('conversation.sorryIDidntCatchThat'));
+
+                return $this->repeat();
+            }
+
+            return call_user_func([$this, $selectedOption['callback']]);
+        });
+    }
+
+    /**
+     * Cancels the conversation sending an thanks ending message.
+     *
+     * @return void
+     */
+    protected function cancelConversation()
+    {
+        $this->sendEndingMessage(__('conversation.thankYou'));
     }
 
     /**
