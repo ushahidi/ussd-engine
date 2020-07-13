@@ -93,7 +93,7 @@ class SurveyConversation extends Conversation
         try {
             $surveys = $this->getAvailableSurveys();
             $this->surveys = Collection::make($surveys);
-            $this->askSurvey();
+            $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
             $this->sendEndingMessage(__('conversation.oops'));
         }
@@ -165,6 +165,42 @@ class SurveyConversation extends Conversation
         }
     }
 
+    protected function askInteractionLanguage()
+    {
+        $availableLanguagesList = $this->surveys->pluck('enabled_languages')->flatten()->unique()->all();
+
+        $field = [
+            'label' => __('conversation.chooseALanguage'),
+            'key' => 'language',
+            'required' => true,
+            'options' => $availableLanguagesList,
+        ];
+
+        $question = new SelectQuestion($field);
+
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedLanguage = $question->getAnswerValue()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->repeat();
+            }
+
+            try {
+                $this->selectedLanguage = $selectedLanguage;
+                App::setLocale($this->selectedLanguage);
+                $this->askSurvey();
+            } catch (\Throwable $exception) {
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
+        });
+    }
+
     /**
      * Ask the user to select a survey and handle the user input.
      *
@@ -173,7 +209,7 @@ class SurveyConversation extends Conversation
     protected function askSurvey()
     {
         $field = [
-            'label' => 'Which form do you want to complete?',
+            'label' => __('conversation.selectSurvey'),
             'key' => 'survey',
             'required' => true,
             'options' => $this->surveys,
