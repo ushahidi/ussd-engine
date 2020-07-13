@@ -167,6 +167,12 @@ class SurveyConversation extends Conversation
         }
     }
 
+    /**
+     * Ask the user to choose a language from the availables on the surveys list.
+     * This happens before the survey selection question.
+     *
+     * @return void
+     */
     protected function askInteractionLanguage()
     {
         $availableLanguagesList = $this->surveys->pluck('enabled_languages')->flatten()->unique()->all();
