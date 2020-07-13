@@ -15,7 +15,7 @@ class SelectQuestion extends FieldQuestion
 
     protected $displayAccessor;
 
-    public function __construct(array $field, string $valueAccessor, string $displayAccessor)
+    public function __construct(array $field, string $valueAccessor = null, string $displayAccessor = null)
     {
         parent::__construct($field);
         $this->valueAccessor = $valueAccessor;
