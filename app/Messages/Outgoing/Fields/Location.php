@@ -72,4 +72,20 @@ class Location extends TextQuestion
 
         return true;
     }
+
+    public function getAnswerValue()
+    {
+        $value = null;
+
+        if ($this->answerValue) {
+            $value = [
+                'lat' => $this->answerValue['latitude'],
+                'lon' => $this->answerValue['longitude'],
+            ];
+        }
+
+        return [
+          'value' => $value,
+        ];
+    }
 }

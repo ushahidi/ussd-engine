@@ -41,5 +41,14 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     abstract public function getRules(): array;
 
-    abstract public function getAnswerResponse(): array;
+    public function getAnswerResponse(): array
+    {
+        return [
+            'id' => $this->field['id'],
+            'type' => $this->field['type'],
+            'value' => $this->getAnswerValue(),
+          ];
+    }
+
+    abstract public function getAnswerValue();
 }

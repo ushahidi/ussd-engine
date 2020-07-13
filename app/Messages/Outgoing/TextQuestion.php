@@ -26,11 +26,9 @@ class TextQuestion extends FieldQuestion
         return [$this->field['key'] => $answer->getText()];
     }
 
-    public function getAnswerResponse(): array
+    public function getAnswerValue()
     {
         return [
-          'id' => $this->field['id'],
-          'type' => $this->field['type'],
           'value' => $this->answerValue,
         ];
     }

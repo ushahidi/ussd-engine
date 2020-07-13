@@ -14,4 +14,9 @@ class DateTime extends TextQuestion
 
         return $rules;
     }
+
+    public function getAnswerValue()
+    {
+        return $this->answerValue;
+    }
 }

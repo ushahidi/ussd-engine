@@ -38,7 +38,7 @@ class Categories extends SelectQuestion
         return [$this->field['key'] => explode(',', $value)];
     }
 
-    public function getAnswerResponse(): array
+    public function getAnswerValue()
     {
         $values = [];
         foreach ($this->answerValue as $option) {
@@ -46,7 +46,7 @@ class Categories extends SelectQuestion
         }
 
         return [
-        'value' => $values,
-      ];
+            'value' => $values,
+        ];
     }
 }

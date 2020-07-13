@@ -177,7 +177,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedSurvey = $question->getAnswerResponse()['value'];
+                $selectedSurvey = $question->getAnswerValue()['value'];
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -334,7 +334,7 @@ class SurveyConversation extends Conversation
         $titleField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'title');
         $descriptionField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'description');
         $post = [
-            'title' => $titleField ? $titleField['value'] : null,
+            'title' => $titleField ? $titleField['value']['value'] : null,
             'locale' => 'en_US',
             'post_content' => $this->postContent,
             'form_id' => $this->survey['id'],
@@ -343,7 +343,7 @@ class SurveyConversation extends Conversation
             'published_to' => [],
             'post_date' => now()->toISOString(),
             'enabled_languages' => [],
-            'content' => $descriptionField ? $descriptionField['value'] : null,
+            'content' => $descriptionField ? $descriptionField['value']['value'] : null,
         ];
 
         try {

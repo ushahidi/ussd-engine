@@ -33,7 +33,7 @@ class Checkboxes extends SelectQuestion
         return [$this->field['key'] => explode(',', $value)];
     }
 
-    public function getAnswerResponse(): array
+    public function getAnswerValue(): array
     {
         $values = [];
         foreach ($this->answerValue as $option) {
