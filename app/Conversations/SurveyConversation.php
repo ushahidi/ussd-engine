@@ -10,6 +10,7 @@ use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
@@ -71,6 +72,8 @@ class SurveyConversation extends Conversation
      */
     protected $answers = [];
 
+    protected $selectedLanguage;
+
     public function __construct()
     {
         $this->sdk = resolve(Ushahidi::class);
@@ -112,6 +115,7 @@ class SurveyConversation extends Conversation
     public function __wakeup()
     {
         $this->sdk = resolve(Ushahidi::class);
+        App::setLocale($this->selectedLanguage);
 
         return parent::__sleep();
     }
@@ -189,7 +193,40 @@ class SurveyConversation extends Conversation
 
             try {
                 $this->survey = $this->getSurvey($selectedSurvey);
-                $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
+                $this->askLanguage();
+            } catch (\Throwable $exception) {
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
+        });
+    }
+
+    protected function askLanguage()
+    {
+        $field = [
+            'label' => __('conversation.chooseALanguage'),
+            'key' => 'language',
+            'required' => true,
+            'options' => array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]),
+        ];
+
+        $question = new SelectQuestion($field);
+
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedLanguage = $question->getAnswerValue()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->repeat();
+            }
+
+            try {
+                $this->selectedLanguage = $selectedLanguage;
+                App::setLocale($this->selectedLanguage);
                 $this->askTasks();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -204,6 +241,11 @@ class SurveyConversation extends Conversation
      */
     protected function askTasks()
     {
+        $replace = [
+            'name' => $this->survey['name'],
+            'description' => $this->survey['description'],
+        ];
+        $this->say(__('conversation.surveySelected', $replace));
         if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
             $this->tasks = Collection::make([$this->survey['tasks'][0]])->keyBy('id');
             $this->askNextTask();

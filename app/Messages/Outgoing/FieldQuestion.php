@@ -4,6 +4,7 @@ namespace App\Messages\Outgoing;
 
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
 
 abstract class FieldQuestion extends Question implements FieldQuestionInterface
@@ -19,7 +20,11 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     public function getTextContent(): string
     {
-        return $this->field['label'];
+        $locale = App::getLocale();
+
+        $context = isset($this->field['translations'][$locale]) ? $this->field['translations'][$locale] : $this->field;
+
+        return $context['label'];
     }
 
     abstract public function getAnswerBody(Answer $answer): array;
