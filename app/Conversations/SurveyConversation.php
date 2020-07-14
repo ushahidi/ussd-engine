@@ -5,13 +5,13 @@ namespace App\Conversations;
 use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
+use App\Messages\Outgoing\FieldQuestionFactory;
+use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
-use BotMan\BotMan\Messages\Outgoing\Actions\Button;
-use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
 
 /**
@@ -166,19 +166,25 @@ class SurveyConversation extends Conversation
      */
     protected function askSurvey()
     {
-        $question = Question::create(__('conversation.selectSurvey'))
-            ->addButtons(
-                $this->surveys->map(function ($survey) {
-                    return Button::create($survey['name'])->value($survey['id']);
-                })->all()
-            );
+        $field = [
+            'label' => 'Which form do you want to complete?',
+            'key' => 'survey',
+            'required' => true,
+            'options' => $this->surveys,
+        ];
+        $question = new SelectQuestion($field, 'id', 'name');
 
-        $this->ask($question, function (Answer $answer) {
-            // Detect if button was clicked:
-            if ($answer->isInteractiveMessageReply()) {
-                $selectedSurvey = $answer->getValue();
-            } else {
-                $selectedSurvey = $answer->getText();
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedSurvey = $question->getAnswerValue()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->repeat();
             }
 
             try {
@@ -288,10 +294,13 @@ class SurveyConversation extends Conversation
      */
     private function askField(array $field)
     {
-        $this->ask($this->createQuestionForField($field), function (Answer $answer) use ($field) {
-            $errors = $this->validateAnswer($field, $answer);
-
-            if ($errors) {
+        $question = FieldQuestionFactory::create($field);
+        $this->ask($question, function (Answer $answer) use ($question, $field) {
+            try {
+                $question->setAnswer($answer);
+                $this->answers[] = $question->getAnswerResponse();
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
                     $this->say($error);
                 }
@@ -299,62 +308,9 @@ class SurveyConversation extends Conversation
                 return $this->repeat();
             }
 
-            $answerForField = $answer->getText();
-
-            if ($answerForField) {
-                $this->answers[] = [
-                    'id' => $field['id'],
-                    'type' => $field['type'],
-                    'value' => $answerForField,
-                ];
-            }
-
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
-    }
-
-    /**
-     * Creates a question using the provided field information.
-     *
-     * @param array $field
-     * @return void
-     */
-    private function createQuestionForField(array $field)
-    {
-        $question = Question::create($field['label'].':');
-
-        return $question;
-    }
-
-    /**
-     * Validate answer according to rules of the provided field.
-     * Returns errors if any.
-     *
-     * @param array $field
-     * @param Answer $answer
-     * @return array
-     */
-    private function validateAnswer(array $field, Answer $answer)
-    {
-        $validationRules = [];
-
-        if ($field['required']) {
-            $validationRules[] = 'required';
-        }
-
-        $validationRules = implode('|', $validationRules);
-        $validator = Validator::make([
-            $field['key'] => $answer->getText(),
-        ], [
-           $field['key']  => $validationRules,
-        ]);
-
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
-            return $errors;
-        }
     }
 
     /**
@@ -378,7 +334,7 @@ class SurveyConversation extends Conversation
         $titleField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'title');
         $descriptionField = Collection::make($this->postContent[0]['fields'])->firstWhere('type', 'description');
         $post = [
-            'title' => $titleField ? $titleField['value'] : null,
+            'title' => $titleField ? $titleField['value']['value'] : null,
             'locale' => 'en_US',
             'post_content' => $this->postContent,
             'form_id' => $this->survey['id'],
@@ -387,7 +343,7 @@ class SurveyConversation extends Conversation
             'published_to' => [],
             'post_date' => now()->toISOString(),
             'enabled_languages' => [],
-            'content' => $descriptionField ? $descriptionField['value'] : null,
+            'content' => $descriptionField ? $descriptionField['value']['value'] : null,
         ];
 
         try {
