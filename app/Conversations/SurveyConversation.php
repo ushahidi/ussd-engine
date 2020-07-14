@@ -427,8 +427,11 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question, $field) {
             if (trim($answer->getText()) === '?' && $this->userCanAskForInfo) {
                 $this->userCanAskForInfo = false;
+                $this->repeat();
+                $this->say($question->getMoreInfoContent());
+                $this->say(__('conversation.requestToFillIn'));
 
-                return $this->repeat($question->getMoreInfoContent());
+                return;
             }
             try {
                 $question->setAnswer($answer);
