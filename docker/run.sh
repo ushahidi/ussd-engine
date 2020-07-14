@@ -4,8 +4,8 @@ if [ -f .env ]; then
   source .env
 fi
 
-# Storage folder permissions
-chown -R www-data storage/
+# Required folder permissions
+chown -R www-data storage/ bootstrap/cache/
 
 composer install --no-interaction
 
