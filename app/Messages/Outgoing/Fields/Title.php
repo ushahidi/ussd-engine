@@ -18,4 +18,16 @@ class Title extends TextQuestion
 
         return $rules;
     }
+
+    /**
+     * Returns the array of translated errors to use with the validator of this field.
+     *
+     * @return array
+     */
+    public function getValidationMessages(): array
+    {
+        return [
+            'required' => __('validation.custom.title.required'),
+        ];
+    }
 }

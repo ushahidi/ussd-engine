@@ -40,9 +40,21 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     {
         $rules = $this->getRules();
 
-        $validator = Validator::make($body, $rules);
+        $messages = $this->getValidationMessages();
+
+        $validator = Validator::make($body, $rules, $messages);
 
         return $validator->validate();
+    }
+
+    /**
+     * Returns the array of translated errors to use with the validator of this field.
+     *
+     * @return array
+     */
+    public function getValidationMessages(): array
+    {
+        return [];
     }
 
     abstract public function getRules(): array;
