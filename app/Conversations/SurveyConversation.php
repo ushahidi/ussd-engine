@@ -325,6 +325,41 @@ class SurveyConversation extends Conversation
             }
         }
 
+        // If there are no more tasks to complete, confirm the user wants to send the responses
+        $this->askForSendConfirmation();
+    }
+
+    /**
+     * Ask the user for confirmation before sending the responses to the Ushahidi Platform.
+     *
+     * @return void
+     */
+    private function askForSendConfirmation()
+    {
+        // The callback should be a method available in this class
+        $options = [
+            [
+                'display' => __('conversation.yes'),
+                'value' =>  __('conversation.yes'),
+                'callback' => 'sendSurveyResponses',
+            ],
+            [
+                'display' => __('conversation.no'),
+                'value' => __('conversation.no'),
+                'callback' => 'cancelConversation',
+            ],
+        ];
+
+        return $this->askDecision(__('conversation.shouldSendResponses'), $options);
+    }
+
+    /**
+     * Try to create a post sending the responses to the platform.
+     *
+     * @return void
+     */
+    private function sendSurveyResponses()
+    {
         try {
             $this->sendResponseToPlatform();
             $this->sendEndingMessage(__('conversation.thanksForSubmitting'));

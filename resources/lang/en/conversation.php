@@ -14,4 +14,7 @@ return [
   'sorryIDidntCatchThat' => "Sorry, I didn't catch that",
   'whatDoYouWantToDo' => 'What do you want to do?',
   'thankYou' => 'Thank you!',
+  'shouldSendResponses' => 'There are no more questions. Confirm you would like to send the responses by sending "YES". Cancel the survey by sending "NO" or "0000"',
+  'yes' => 'YES',
+  'no' => 'NO',
 ];

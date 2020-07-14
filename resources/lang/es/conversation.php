@@ -14,4 +14,7 @@ return [
   'sorryIDidntCatchThat' => ' Perdón, no lo he entendido',
   'whatDoYouWantToDo' => '¿Qué quieres hacer ahora?',
   'thankYou' => 'Gracias',
+  'shouldSendResponses' => 'No hay más preguntas. Confirma que quieres enviar tus respuestas enviando "SI". Cancela el formulario enviando "NO" o "0000"',
+  'yes' => 'SI',
+  'no' => 'NO',
 ];
