@@ -444,6 +444,10 @@ class SurveyConversation extends Conversation
                     $this->say($error);
                 }
 
+                if ($question->hasHints()) {
+                    $this->say($question->getHints());
+                }
+
                 return $this->repeat();
             }
 

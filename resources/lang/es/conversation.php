@@ -18,4 +18,8 @@ return [
   'yes' => 'SI',
   'no' => 'NO',
   'requestToFillIn' => 'Por favor, responde la pregunta.',
+  'hints' => [
+    'checkboxes' => 'Pista: Selecciona todas las que califiquen usando el formato de valores separados por coma. Ejemplo: 1,2',
+    'location' => 'Pista: Envia la lalitud y longitud  usando el formato de valores separados por coma. Ejemplo: 18.7527845,-71.3075768',
+  ],
 ];

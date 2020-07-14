@@ -19,4 +19,8 @@ interface FieldQuestionInterface
     public function getAnswerBody(Answer $answer): array;
 
     public function getAnswerResponse(): array;
+
+    public function hasHints(): bool;
+
+    public function getHints(): string;
 }

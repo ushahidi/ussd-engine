@@ -65,4 +65,24 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     }
 
     abstract public function getAnswerValue();
+
+    /**
+     * Used to know if this question has hints to show.
+     *
+     * @return bool
+     */
+    public function hasHints(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Return the hints to show for this field.
+     *
+     * @return string
+     */
+    public function getHints(): string
+    {
+        return '';
+    }
 }

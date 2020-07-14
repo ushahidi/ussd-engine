@@ -44,4 +44,24 @@ class Checkboxes extends SelectQuestion
           'value' => $values,
         ];
     }
+
+    /**
+     * Used to know if this question has hints to show.
+     *
+     * @return bool
+     */
+    public function hasHints(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Return the hints to show for this field.
+     *
+     * @return string
+     */
+    public function getHints(): string
+    {
+        return __('conversation.hints.checkboxes');
+    }
 }
