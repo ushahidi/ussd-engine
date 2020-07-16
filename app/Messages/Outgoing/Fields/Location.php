@@ -106,6 +106,6 @@ class Location extends TextQuestion
      */
     public function getHints(): string
     {
-        return __('conversation.hints.checkboxes');
+        return __('conversation.hints.location');
     }
 }
