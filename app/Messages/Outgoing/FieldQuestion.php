@@ -4,6 +4,7 @@ namespace App\Messages\Outgoing;
 
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,14 +19,25 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         parent::__construct($this->getTextContent());
     }
 
+    /**
+     * Returns the string to be used as text for this question.
+     *
+     * @return string
+     */
     public function getTextContent(): string
     {
-        return $this->__('label');
+        return $this->translate('label', $this->field);
     }
 
+    /**
+     * Returns the string to be used when the user triggers more info
+     * for this question.
+     *
+     * @return string
+     */
     public function getMoreInfoContent(): string
     {
-        return $this->__('instructions');
+        return $this->translate('instructions', $this->field);
     }
 
     abstract public function getAnswerBody(Answer $answer): array;
@@ -68,12 +80,37 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
           ];
     }
 
-    public function __(string $accesor): string
+    /**
+     * Find the translation for the provided accesor in the provided context.
+     * The current app locale is used to find the right set of translations.
+     *
+     * @param string $accesor
+     * @param array $context
+     * @return string
+     */
+    public function translate(string $accesor, array $context): string
     {
-        $locale = App::getLocale();
-        $translations = isset($this->field['translations'][$locale]) ? $this->field['translations'][$locale] : [];
+        $defaultValue = Arr::get($context, $accesor, '');
+        if ($this->hasTranslations($context)) {
+            $locale = App::getLocale();
+            $translations = isset($context['translations'][$locale]) ? $context['translations'][$locale] : [];
 
-        return (string) (isset($translations[$accesor]) ? $translations[$accesor] : $this->field[$accesor]);
+            return (string) Arr::get($translations, $accesor, $defaultValue);
+        }
+
+        return $defaultValue;
+    }
+
+    /**
+     * Returns true if the provided context contains a list of translations,
+     * returns false otherwise.
+     *
+     * @param array $context
+     * @return bool
+     */
+    public function hasTranslations(array $context): bool
+    {
+        return isset($context['translations']) && ! empty($context['translations']);
     }
 
     abstract public function getAnswerValue();
