@@ -220,7 +220,7 @@ class SurveyConversation extends Conversation
             'label' => __('conversation.selectSurvey'),
             'key' => 'survey',
             'required' => true,
-            'options' => $this->surveys,
+            'options' => $this->surveys->all(),
         ];
         $question = new SelectQuestion($field, 'id', 'name');
 
