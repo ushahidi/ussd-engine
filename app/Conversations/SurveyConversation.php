@@ -169,6 +169,7 @@ class SurveyConversation extends Conversation
         $field = [
             'label' => 'Which form do you want to complete?',
             'key' => 'survey',
+            'name' => __('fields.survey'),
             'required' => true,
             'options' => $this->surveys,
         ];

@@ -8,6 +8,18 @@ use Illuminate\Validation\Rule;
 
 class Checkboxes extends SelectQuestion
 {
+    /**
+     * Sets the translated name for this field
+     * before parent constructor is executed.
+     *
+     * @param array $field
+     */
+    public function __construct(array $field)
+    {
+        $field['name'] = __('fields.checkboxes');
+        parent::__construct($field);
+    }
+
     public function getRules(): array
     {
         $validationRules = [];
@@ -19,8 +31,8 @@ class Checkboxes extends SelectQuestion
         $validationRules[] = 'array';
 
         $rules = [
-          $this->field['key']  => $validationRules,
-          $this->field['key'].'.*'  => Rule::in(array_keys($this->optionsMap)),
+          $this->name  => $validationRules,
+          $this->name.'.*'  => Rule::in(array_keys($this->optionsMap)),
         ];
 
         return $rules;
@@ -30,7 +42,7 @@ class Checkboxes extends SelectQuestion
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->field['key'] => explode(',', $value)];
+        return [$this->name => explode(',', $value)];
     }
 
     public function getAnswerValue(): array

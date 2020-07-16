@@ -10,6 +10,7 @@ class Categories extends SelectQuestion
 {
     public function __construct(array $field)
     {
+        $field['name'] = __('fields.categories');
         parent::__construct($field, 'id', 'tag');
     }
 
@@ -24,8 +25,8 @@ class Categories extends SelectQuestion
         $validationRules[] = 'array';
 
         $rules = [
-        $this->field['key']  => $validationRules,
-        $this->field['key'].'.*'  => Rule::in(array_keys($this->optionsMap)),
+        $this->name  => $validationRules,
+        $this->name.'.*'  => Rule::in(array_keys($this->optionsMap)),
       ];
 
         return $rules;
@@ -35,7 +36,7 @@ class Categories extends SelectQuestion
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->field['key'] => explode(',', $value)];
+        return [$this->name => explode(',', $value)];
     }
 
     public function getAnswerValue()

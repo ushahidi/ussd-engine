@@ -49,7 +49,7 @@ class SelectQuestion extends FieldQuestion
         $validationRules[] = Rule::in(array_keys($this->optionsMap));
 
         $rules = [
-          $this->field['key']  => $validationRules,
+          $this->name  => $validationRules,
         ];
 
         return $rules;
@@ -59,7 +59,7 @@ class SelectQuestion extends FieldQuestion
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->field['key'] => $value];
+        return [$this->name => $value];
     }
 
     public function getAnswerValue()
