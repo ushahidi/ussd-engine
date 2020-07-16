@@ -461,6 +461,9 @@ class SurveyConversation extends Conversation
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
+        if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
+            $this->say($question->getHints());
+        }
         $this->say(__('conversation.showMoreInfo'));
     }
 

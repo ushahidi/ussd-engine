@@ -46,6 +46,16 @@ class Checkboxes extends SelectQuestion
     }
 
     /**
+     * Used to know if the hints for this question should be shown by default.
+     *
+     * @return bool
+     */
+    public function shouldShowHintsByDefault(): bool
+    {
+        return true;
+    }
+
+    /**
      * Used to know if this question has hints to show.
      *
      * @return bool
