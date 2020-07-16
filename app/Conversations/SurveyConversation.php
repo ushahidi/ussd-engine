@@ -175,7 +175,12 @@ class SurveyConversation extends Conversation
      */
     protected function askInteractionLanguage()
     {
-        $availableLanguagesList = $this->surveys->pluck('enabled_languages')->flatten()->unique()->all();
+        $availableLanguagesList = $this->surveys
+                                            ->pluck('enabled_languages')
+                                            ->flatten()
+                                            ->unique()
+                                            ->values()
+                                            ->all();
 
         $field = [
             'label' => __('conversation.chooseALanguage'),
@@ -204,6 +209,7 @@ class SurveyConversation extends Conversation
                 App::setLocale($this->selectedLanguage);
                 $this->askSurvey();
             } catch (\Throwable $exception) {
+                Log::error('Error while asking interaction language:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         });
@@ -241,6 +247,7 @@ class SurveyConversation extends Conversation
                 $this->survey = $this->getSurvey($selectedSurvey);
                 $this->askSurveyLanguage();
             } catch (\Throwable $exception) {
+                Log::error('Error while asking survey:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         });
