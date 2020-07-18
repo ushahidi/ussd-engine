@@ -90,7 +90,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      */
     public function translate(string $accesor, array $context): string
     {
-        $defaultValue = Arr::get($context, $accesor, '');
+        $defaultValue = Arr::get($context, $accesor);
         if ($this->hasTranslations($context)) {
             $locale = App::getLocale();
             $translations = isset($context['translations'][$locale]) ? $context['translations'][$locale] : [];
@@ -98,7 +98,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
             return (string) Arr::get($translations, $accesor, $defaultValue);
         }
 
-        return $defaultValue;
+        return (string) $defaultValue;
     }
 
     /**
