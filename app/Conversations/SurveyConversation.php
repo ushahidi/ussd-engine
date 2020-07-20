@@ -9,7 +9,10 @@ use App\Messages\Outgoing\FieldQuestionFactory;
 use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
+use BotMan\BotMan\Messages\Outgoing\Actions\Button;
+use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
@@ -71,6 +74,10 @@ class SurveyConversation extends Conversation
      */
     protected $answers = [];
 
+    protected $selectedLanguage;
+
+    protected $userCanAskForInfo = true;
+
     public function __construct()
     {
         $this->sdk = resolve(Ushahidi::class);
@@ -88,7 +95,7 @@ class SurveyConversation extends Conversation
         try {
             $surveys = $this->getAvailableSurveys();
             $this->surveys = Collection::make($surveys);
-            $this->askSurvey();
+            $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
             $this->sendEndingMessage(__('conversation.oops'));
         }
@@ -112,6 +119,7 @@ class SurveyConversation extends Conversation
     public function __wakeup()
     {
         $this->sdk = resolve(Ushahidi::class);
+        App::setLocale($this->selectedLanguage);
 
         return parent::__sleep();
     }
@@ -160,6 +168,54 @@ class SurveyConversation extends Conversation
     }
 
     /**
+     * Ask the user to choose a language from the availables on the surveys list.
+     * This happens before the survey selection question.
+     *
+     * @return void
+     */
+    protected function askInteractionLanguage()
+    {
+        $availableLanguagesList = $this->surveys
+                                            ->pluck('enabled_languages')
+                                            ->flatten()
+                                            ->unique()
+                                            ->values()
+                                            ->all();
+
+        $field = [
+            'label' => __('conversation.chooseALanguage'),
+            'key' => 'language',
+            'required' => true,
+            'options' => $availableLanguagesList,
+        ];
+
+        $question = new SelectQuestion($field);
+
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedLanguage = $question->getAnswerValue()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->askCancelOrGoToListOfSurveys();
+            }
+
+            try {
+                $this->selectedLanguage = $selectedLanguage;
+                App::setLocale($this->selectedLanguage);
+                $this->askSurvey();
+            } catch (\Throwable $exception) {
+                Log::error('Error while asking interaction language:'.$exception->getMessage());
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
+        });
+    }
+
+    /**
      * Ask the user to select a survey and handle the user input.
      *
      * @return void
@@ -167,10 +223,10 @@ class SurveyConversation extends Conversation
     protected function askSurvey()
     {
         $field = [
-            'label' => 'Which form do you want to complete?',
+            'label' => __('conversation.selectSurvey'),
             'key' => 'survey',
             'required' => true,
-            'options' => $this->surveys,
+            'options' => $this->surveys->all(),
         ];
         $question = new SelectQuestion($field, 'id', 'name');
 
@@ -189,7 +245,46 @@ class SurveyConversation extends Conversation
 
             try {
                 $this->survey = $this->getSurvey($selectedSurvey);
-                $this->say(__('conversation.surveySelected', ['name' => $this->survey['name']]));
+                $this->askSurveyLanguage();
+            } catch (\Throwable $exception) {
+                Log::error('Error while asking survey:'.$exception->getMessage());
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
+        });
+    }
+
+    /**
+     * Ask the user to select one of the available languages for the selected survey.
+     *
+     * @return void
+     */
+    protected function askSurveyLanguage()
+    {
+        $field = [
+            'label' => __('conversation.chooseALanguage'),
+            'key' => 'language',
+            'required' => true,
+            'options' => array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]),
+        ];
+
+        $question = new SelectQuestion($field);
+
+        $this->ask($question, function (Answer $answer) use ($question) {
+            try {
+                $question->setAnswer($answer);
+                $selectedLanguage = $question->getAnswerValue()['value'];
+            } catch (ValidationException $exception) {
+                $errors = $exception->validator->errors()->all();
+                foreach ($errors as $error) {
+                    $this->say($error);
+                }
+
+                return $this->askCancelOrGoToListOfSurveys();
+            }
+
+            try {
+                $this->selectedLanguage = $selectedLanguage;
+                App::setLocale($this->selectedLanguage);
                 $this->askTasks();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -204,6 +299,11 @@ class SurveyConversation extends Conversation
      */
     protected function askTasks()
     {
+        $replace = [
+            'name' => $this->survey['name'],
+            'description' => $this->survey['description'],
+        ];
+        $this->say(__('conversation.surveySelected', $replace));
         if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
             $this->tasks = Collection::make([$this->survey['tasks'][0]])->keyBy('id');
             $this->askNextTask();
@@ -232,6 +332,41 @@ class SurveyConversation extends Conversation
             }
         }
 
+        // If there are no more tasks to complete, confirm the user wants to send the responses
+        $this->askForSendConfirmation();
+    }
+
+    /**
+     * Ask the user for confirmation before sending the responses to the Ushahidi Platform.
+     *
+     * @return void
+     */
+    private function askForSendConfirmation()
+    {
+        // The callback should be a method available in this class
+        $options = [
+            [
+                'display' => __('conversation.yes'),
+                'value' =>  __('conversation.yes'),
+                'callback' => 'sendSurveyResponses',
+            ],
+            [
+                'display' => __('conversation.no'),
+                'value' => __('conversation.no'),
+                'callback' => 'cancelConversation',
+            ],
+        ];
+
+        return $this->askDecision(__('conversation.shouldSendResponses'), $options);
+    }
+
+    /**
+     * Try to create a post sending the responses to the platform.
+     *
+     * @return void
+     */
+    private function sendSurveyResponses()
+    {
         try {
             $this->sendResponseToPlatform();
             $this->sendEndingMessage(__('conversation.thanksForSubmitting'));
@@ -261,6 +396,7 @@ class SurveyConversation extends Conversation
     private function askNextField()
     {
         if ($this->fields->count()) {
+            $this->userCanAskForInfo = true;
             $this->askField($this->fields->first());
         } else {
             $this->buildTaskResponse();
@@ -296,13 +432,27 @@ class SurveyConversation extends Conversation
     {
         $question = FieldQuestionFactory::create($field);
         $this->ask($question, function (Answer $answer) use ($question, $field) {
+            if (trim($answer->getText()) === '?' && $this->userCanAskForInfo) {
+                $this->userCanAskForInfo = false;
+                $this->repeat();
+                $this->say($question->getMoreInfoContent());
+                $this->say(__('conversation.requestToFillIn'));
+
+                return;
+            }
             try {
                 $question->setAnswer($answer);
                 $this->answers[] = $question->getAnswerResponse();
             } catch (ValidationException $exception) {
+                $this->userCanAskForInfo = true;
+
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
                     $this->say($error);
+                }
+
+                if ($question->hasHints()) {
+                    $this->say($question->getHints());
                 }
 
                 return $this->repeat();
@@ -311,6 +461,72 @@ class SurveyConversation extends Conversation
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
+        if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
+            $this->say($question->getHints());
+        }
+        $this->say(__('conversation.showMoreInfo'));
+    }
+
+    /**
+     * Prompt the user to cancel or go to the list of surveys
+     * using the decision question function.
+     *
+     * @return void
+     */
+    protected function askCancelOrGoToListOfSurveys()
+    {
+        // The callback should be a method available in this class
+        $options = [
+            [
+                'display' => __('conversation.cancel'),
+                'value' =>  __('conversation.cancelValue'),
+                'callback' => 'cancelConversation',
+            ],
+            [
+                'display' => __('conversation.goToListOfSurveys'),
+                'value' => __('conversation.goToListOfSurveysValue'),
+                'callback' => 'askSurvey',
+            ],
+        ];
+
+        return $this->askDecision(__('conversation.whatDoYouWantToDo'), $options);
+    }
+
+    /**
+     * Create and aks a question with desicion options, if one of the options is choosen
+     * the callback for the option gets called.
+     *
+     * @param string $text
+     * @param array $options
+     * @return void
+     */
+    protected function askDecision(string $text = null, array $options)
+    {
+        $question = Question::create($text);
+        $question->addButtons(array_map(function ($option) {
+            return Button::create($option['display'])->value($option['value']);
+        }, $options));
+
+        $this->ask($question, function (Answer $answer) use ($options) {
+            $selectedOption = Collection::make($options)->firstWhere('value', trim($answer->getText()));
+            if (! $selectedOption) {
+                $this->say(__('conversation.sorryIDidntCatchThat'));
+
+                return $this->repeat();
+            }
+
+            return call_user_func([$this, $selectedOption['callback']]);
+        });
+    }
+
+    /**
+     * Cancels the conversation sending an thanks ending message.
+     *
+     * @return void
+     */
+    protected function cancelConversation()
+    {
+        $this->sendEndingMessage(__('conversation.thankYou'));
     }
 
     /**

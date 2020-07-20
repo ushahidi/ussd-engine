@@ -8,6 +8,8 @@ interface FieldQuestionInterface
 {
     public function getTextContent(): string;
 
+    public function getMoreInfoContent(): string;
+
     public function setAnswer(Answer $answer);
 
     public function validate(array $answer);
@@ -17,4 +19,8 @@ interface FieldQuestionInterface
     public function getAnswerBody(Answer $answer): array;
 
     public function getAnswerResponse(): array;
+
+    public function hasHints(): bool;
+
+    public function getHints(): string;
 }
