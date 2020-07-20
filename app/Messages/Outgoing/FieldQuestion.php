@@ -12,11 +12,18 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 {
     protected $field;
 
+    protected $name;
+
     protected $answerValue;
+
 
     public function __construct(array $field)
     {
         $this->field = $field;
+
+        if (isset($this->field['name'])) {
+            $this->name = $this->field['name'];
+        }
 
         parent::__construct($this->getTextContent());
     }
@@ -42,12 +49,17 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         return self::translate('instructions', $this->field);
     }
 
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
     abstract public function getAnswerBody(Answer $answer): array;
 
     public function setAnswer(Answer $answer)
     {
         $validated = $this->validate($this->getAnswerBody($answer));
-        $this->answerValue = $validated[$this->field['key']];
+        $this->answerValue = $validated[$this->name];
     }
 
     public function validate(array $body)

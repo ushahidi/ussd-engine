@@ -7,6 +7,18 @@ use BotMan\BotMan\Messages\Incoming\Answer;
 
 class Location extends TextQuestion
 {
+    /**
+     * Sets the translated name for this field
+     * before parent constructor is executed.
+     *
+     * @param array $field
+     */
+    public function __construct(array $field)
+    {
+        $field['name'] = __('fields.location');
+        parent::__construct($field);
+    }
+
     public function getRules(): array
     {
         $validationRules = [
@@ -19,13 +31,13 @@ class Location extends TextQuestion
         }
 
         $rules = [
-            $this->field['key']  => $validationRules,
-            $this->field['key'].'.latitude' => [
+            $this->name  => $validationRules,
+            $this->name.'.latitude' => [
                 'required_with:'.$this->field['key'],
                 'numeric',
                 'between:-90,90',
             ],
-            $this->field['key'].'.longitude' => [
+            $this->name.'.longitude' => [
                 'required_with:'.$this->field['key'],
                 'numeric',
                 'between:-180,180',
@@ -42,7 +54,7 @@ class Location extends TextQuestion
             $this->field['key'] => $text ? $this->getCoordinatesFromText($text) : null,
         ];
 
-        return $body;
+        return [$this->name => $location];
     }
 
     /**

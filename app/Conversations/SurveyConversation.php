@@ -225,6 +225,7 @@ class SurveyConversation extends Conversation
         $field = [
             'label' => __('conversation.selectSurvey'),
             'key' => 'survey',
+            'name' => __('fields.survey'),
             'required' => true,
             'options' => $this->surveys->all(),
         ];

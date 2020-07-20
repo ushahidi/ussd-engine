@@ -15,7 +15,7 @@ class TextQuestion extends FieldQuestion
         }
 
         $rules = [
-          $this->field['key']  => $validationRules,
+          $this->name  => $validationRules,
         ];
 
         return $rules;
@@ -23,7 +23,7 @@ class TextQuestion extends FieldQuestion
 
     public function getAnswerBody(Answer $answer): array
     {
-        return [$this->field['key'] => $answer->getText()];
+        return [$this->name => $answer->getText()];
     }
 
     public function getAnswerValue()
