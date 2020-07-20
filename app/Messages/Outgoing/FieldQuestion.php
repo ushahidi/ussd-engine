@@ -12,6 +12,8 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 {
     protected $field;
 
+    protected $answerValue;
+
     public function __construct(array $field)
     {
         $this->field = $field;
@@ -26,7 +28,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      */
     public function getTextContent(): string
     {
-        return $this->translate('label', $this->field);
+        return self::translate('label', $this->field);
     }
 
     /**
@@ -37,7 +39,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      */
     public function getMoreInfoContent(): string
     {
-        return $this->translate('instructions', $this->field);
+        return self::translate('instructions', $this->field);
     }
 
     abstract public function getAnswerBody(Answer $answer): array;
@@ -71,6 +73,11 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     abstract public function getRules(): array;
 
+    /**
+     * Returns the field body to attach to the survey report payload.
+     *
+     * @return array
+     */
     public function getAnswerResponse(): array
     {
         return [
@@ -88,10 +95,10 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      * @param array $context
      * @return string
      */
-    public function translate(string $accesor, array $context): string
+    public static function translate(string $accesor, array $context): string
     {
         $defaultValue = Arr::get($context, $accesor);
-        if ($this->hasTranslations($context)) {
+        if (self::hasTranslations($context)) {
             $locale = App::getLocale();
             $translations = isset($context['translations'][$locale]) ? $context['translations'][$locale] : [];
 
@@ -108,7 +115,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      * @param array $context
      * @return bool
      */
-    public function hasTranslations(array $context): bool
+    public static function hasTranslations(array $context): bool
     {
         return isset($context['translations']) && ! empty($context['translations']);
     }
