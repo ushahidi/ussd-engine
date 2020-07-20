@@ -10,27 +10,26 @@ class Location extends TextQuestion
     public function getRules(): array
     {
         $validationRules = [
-          'array',
-          function ($attribute, $value, $fail) {
-              if (! (isset($value['latitude'])) || ! (isset($value['longitude']))) {
-                  return $fail('Location format is not valid.');
-              }
-              if (! ($this->checkLat($value['latitude']))) {
-                  return $fail('Latitude is not valid.');
-              }
-
-              if (! ($this->checkLon($value['longitude']))) {
-                  return $fail('Longitude is not valid.');
-              }
-          },
+            'nullable',
+            'array',
         ];
 
         if ($this->field['required']) {
-            $validationRules[] = 'required';
+            array_unshift($validationRules, 'required');
         }
 
         $rules = [
             $this->field['key']  => $validationRules,
+            $this->field['key'].'.latitude' => [
+                'required_with:'.$this->field['key'],
+                'numeric',
+                'between:-90,90',
+            ],
+            $this->field['key'].'.longitude' => [
+                'required_with:'.$this->field['key'],
+                'numeric',
+                'between:-180,180',
+            ],
         ];
 
         return $rules;
@@ -38,39 +37,29 @@ class Location extends TextQuestion
 
     public function getAnswerBody(Answer $answer): array
     {
-        $coordinates = explode(',', $answer->getText());
-        $location = [
-          'latitude' => isset($coordinates[0]) ? $coordinates[0] : null,
-          'longitude' => isset($coordinates[1]) ? $coordinates[1] : null,
+        $text = trim($answer->getText());
+        $body = [
+            $this->field['key'] => $text ? $this->getCoordinatesFromText($text) : null,
         ];
 
-        return [$this->field['key'] => $location];
+        return $body;
     }
 
-    private function checkLon($lon)
+    /**
+     * Extract latitude and longitude from provided text.
+     *
+     * @param string $text
+     * @return array
+     */
+    private function getCoordinatesFromText(string $text): array
     {
-        if (! is_numeric($lon)) {
-            return false;
-        }
+        $coordinates = explode(',', $text);
+        $location = [
+            'latitude' => isset($coordinates[0]) ? $coordinates[0] : null,
+            'longitude' => isset($coordinates[1]) ? $coordinates[1] : null,
+        ];
 
-        if ($lon < -180 || $lon > 180) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function checkLat($lat)
-    {
-        if (! is_numeric($lat)) {
-            return false;
-        }
-
-        if ($lat < -90 || $lat > 90) {
-            return false;
-        }
-
-        return true;
+        return $location;
     }
 
     public function getAnswerValue()
