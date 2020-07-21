@@ -6,6 +6,7 @@ use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
+use App\Messages\Outgoing\SelectLanguageQuestion;
 use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
@@ -198,14 +199,7 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $field = [
-            'label' => __('conversation.chooseALanguage'),
-            'key' => 'language',
-            'required' => true,
-            'options' => $availableLanguagesList,
-        ];
-
-        $question = new SelectQuestion($field);
+        $question = new SelectLanguageQuestion($availableLanguagesList);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
@@ -277,14 +271,8 @@ class SurveyConversation extends Conversation
      */
     protected function askSurveyLanguage()
     {
-        $field = [
-            'label' => __('conversation.chooseALanguage'),
-            'key' => 'language',
-            'required' => true,
-            'options' => array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]),
-        ];
-
-        $question = new SelectQuestion($field);
+        $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
+        $question = new SelectLanguageQuestion($surveyLanguages);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
