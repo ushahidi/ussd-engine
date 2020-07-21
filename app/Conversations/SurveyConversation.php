@@ -431,7 +431,11 @@ class SurveyConversation extends Conversation
     {
         $question = FieldQuestionFactory::create($field);
         $this->ask($question, function (Answer $answer) use ($question, $field) {
-            if (trim($answer->getText()) === self::MORE_INFO_TRIGGER && $this->userCanAskForInfo) {
+            if (
+                $question->hasMoreInfo() &&
+                trim($answer->getText()) === self::MORE_INFO_TRIGGER &&
+                $this->userCanAskForInfo
+            ) {
                 $this->userCanAskForInfo = false;
                 $this->repeat();
                 $this->say($question->getMoreInfoContent());
@@ -463,7 +467,9 @@ class SurveyConversation extends Conversation
         if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
             $this->say($question->getHints());
         }
-        $this->say(__('conversation.showMoreInfo'));
+        if ($question->hasMoreInfo()) {
+            $this->say(__('conversation.showMoreInfo'));
+        }
     }
 
     /**
