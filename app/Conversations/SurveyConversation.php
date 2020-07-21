@@ -204,7 +204,9 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->askSurvey();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -212,12 +214,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->askCancelOrGoToListOfSurveys();
-            }
-
-            try {
-                $this->selectedLanguage = $selectedLanguage;
-                App::setLocale($this->selectedLanguage);
-                $this->askSurvey();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking interaction language:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -245,6 +241,8 @@ class SurveyConversation extends Conversation
             try {
                 $question->setAnswer($answer);
                 $selectedSurvey = $question->getAnswerValue()['value'];
+                $this->survey = $this->getSurvey($selectedSurvey);
+                $this->askSurveyLanguage();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -252,11 +250,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->repeat();
-            }
-
-            try {
-                $this->survey = $this->getSurvey($selectedSurvey);
-                $this->askSurveyLanguage();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking survey:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -277,7 +270,9 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->askTasks();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -285,12 +280,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->askCancelOrGoToListOfSurveys();
-            }
-
-            try {
-                $this->selectedLanguage = $selectedLanguage;
-                App::setLocale($this->selectedLanguage);
-                $this->askTasks();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
             }
