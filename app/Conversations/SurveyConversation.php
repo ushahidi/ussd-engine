@@ -74,8 +74,23 @@ class SurveyConversation extends Conversation
      */
     protected $answers = [];
 
+    /**
+     * The language selected by the user to interact
+     * through the conversation.
+     * This is used to set the App locale.
+     *
+     * @var string
+     */
     protected $selectedLanguage;
 
+    /**
+     * Indicates if the conversation is in a state where the user
+     * can ask for more information.
+     *
+     * It gets toggled as the conversation transition between questions.
+     *
+     * @var bool
+     */
     protected $userCanAskForInfo = true;
 
     public function __construct()
