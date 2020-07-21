@@ -22,4 +22,14 @@ class SelectLanguageQuestion extends SelectQuestion
         ];
         parent::__construct($field);
     }
+
+    /**
+     * Returns the selected language.
+     *
+     * @return string|null
+     */
+    public function getAnswerValue()
+    {
+        return $this->answerValue ? $this->optionsMap[$this->answerValue] : null;
+    }
 }

@@ -48,4 +48,15 @@ class SelectLanguageQuestionTest extends TestCase
 
         $this->question->setAnswer(new Answer('not-a-language'));
     }
+
+    public function test_it_returns_a_valid_language_as_answer_value()
+    {
+        $this->question->setAnswer(new Answer('1'));
+        $this->assertContains($this->question->getAnswerValue(), $this->languages);
+    }
+
+    public function test_it_returns_null_if_no_ansver()
+    {
+        $this->assertNull($this->question->getAnswerValue());
+    }
 }

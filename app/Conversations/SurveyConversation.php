@@ -204,7 +204,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue()['value'];
+                $selectedLanguage = $question->getAnswerValue();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -277,7 +277,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue()['value'];
+                $selectedLanguage = $question->getAnswerValue();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
