@@ -16,7 +16,6 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     protected $answerValue;
 
-
     public function __construct(array $field)
     {
         $this->field = $field;
@@ -47,6 +46,17 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     public function getMoreInfoContent(): string
     {
         return self::translate('instructions', $this->field);
+    }
+
+    /**
+     * Returns true if the question has something to show when the user
+     * ask for more info.
+     *
+     * @return bool
+     */
+    public function hasMoreInfo(): bool
+    {
+        return ! empty($this->getMoreInfoContent());
     }
 
     public function setName(string $name): void
