@@ -112,6 +112,7 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
+            Log::error('Could not fetch available surveys:'.$exception->getMessage());
             $this->sendEndingMessage(__('conversation.oops'));
         }
     }
