@@ -22,6 +22,7 @@ class FieldQuestionTest extends TestCase
             'id' => 1,
             'type' => 'varchar',
             'key' => 'test-field',
+            'name' => 'testField',
             'label' => 'My awesome field',
             'instructions' => 'Some helpful instructions',
             'translations' => [
@@ -35,7 +36,15 @@ class FieldQuestionTest extends TestCase
                 ],
             ],
         ];
-        $this->fieldQuestionMock = $this->getMockForAbstractClass(FieldQuestion::class, ['field' => $this->field]);
+        $this->fieldQuestionMock = $this->getMockForAbstractClass(
+            FieldQuestion::class,
+            ['field' => $this->field],
+            '',
+            true,
+            true,
+            true,
+            ['validate']
+        );
     }
 
     public function test_sets_question_text()
@@ -123,5 +132,24 @@ class FieldQuestionTest extends TestCase
         $actual = $this->fieldQuestionMock->getAnswerResponse();
 
         $this->assertEquals($expected, $actual);
+    }
+
+    public function test_it_sets_answer()
+    {
+        $text = 'Answer text';
+        $answer = new Answer($text);
+        $answerBody = [$this->field['name'] => $answer->getText()];
+
+        $this->fieldQuestionMock->expects($this->once())
+        ->method('getAnswerBody')
+        ->with($this->equalTo($answer))
+        ->willReturn($answerBody);
+
+        $this->fieldQuestionMock->expects($this->once())
+                                ->method('validate')
+                                ->with($this->equalTo($answerBody))
+                                ->willReturn($answerBody);
+
+        $this->fieldQuestionMock->setAnswer($answer);
     }
 }
