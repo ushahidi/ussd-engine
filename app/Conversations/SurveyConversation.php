@@ -29,6 +29,11 @@ use PlatformSDK\Ushahidi;
 class SurveyConversation extends Conversation
 {
     /**
+     * Reserved character to identify the user wants to retrieve more info.
+     */
+    public const MORE_INFO_TRIGGER = '?';
+
+    /**
      * Ushahidi Platform SDK instance.
      *
      * @var \PlatformSDK\Ushahidi
@@ -426,7 +431,7 @@ class SurveyConversation extends Conversation
     {
         $question = FieldQuestionFactory::create($field);
         $this->ask($question, function (Answer $answer) use ($question, $field) {
-            if (trim($answer->getText()) === '?' && $this->userCanAskForInfo) {
+            if (trim($answer->getText()) === self::MORE_INFO_TRIGGER && $this->userCanAskForInfo) {
                 $this->userCanAskForInfo = false;
                 $this->repeat();
                 $this->say($question->getMoreInfoContent());
