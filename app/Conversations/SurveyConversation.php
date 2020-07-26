@@ -6,6 +6,7 @@ use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
+use App\Messages\Outgoing\SelectLanguageQuestion;
 use App\Messages\Outgoing\SelectQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
@@ -27,6 +28,11 @@ use PlatformSDK\Ushahidi;
  */
 class SurveyConversation extends Conversation
 {
+    /**
+     * Reserved character to identify the user wants to retrieve more info.
+     */
+    public const MORE_INFO_TRIGGER = '?';
+
     /**
      * Ushahidi Platform SDK instance.
      *
@@ -74,8 +80,23 @@ class SurveyConversation extends Conversation
      */
     protected $answers = [];
 
+    /**
+     * The language selected by the user to interact
+     * through the conversation.
+     * This is used to set the App locale.
+     *
+     * @var string
+     */
     protected $selectedLanguage;
 
+    /**
+     * Indicates if the conversation is in a state where the user
+     * can ask for more information.
+     *
+     * It gets toggled as the conversation transition between questions.
+     *
+     * @var bool
+     */
     protected $userCanAskForInfo = true;
 
     public function __construct()
@@ -97,6 +118,7 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
+            Log::error('Could not fetch available surveys:'.$exception->getMessage());
             $this->sendEndingMessage(__('conversation.oops'));
         }
     }
@@ -182,19 +204,14 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $field = [
-            'label' => __('conversation.chooseALanguage'),
-            'key' => 'language',
-            'required' => true,
-            'options' => $availableLanguagesList,
-        ];
-
-        $question = new SelectQuestion($field);
+        $question = new SelectLanguageQuestion($availableLanguagesList);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue()['value'];
+                $this->selectedLanguage = $question->getAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->askSurvey();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -202,12 +219,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->askCancelOrGoToListOfSurveys();
-            }
-
-            try {
-                $this->selectedLanguage = $selectedLanguage;
-                App::setLocale($this->selectedLanguage);
-                $this->askSurvey();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking interaction language:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -235,6 +246,8 @@ class SurveyConversation extends Conversation
             try {
                 $question->setAnswer($answer);
                 $selectedSurvey = $question->getAnswerValue()['value'];
+                $this->survey = $this->getSurvey($selectedSurvey);
+                $this->askSurveyLanguage();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -242,11 +255,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->repeat();
-            }
-
-            try {
-                $this->survey = $this->getSurvey($selectedSurvey);
-                $this->askSurveyLanguage();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking survey:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -261,19 +269,15 @@ class SurveyConversation extends Conversation
      */
     protected function askSurveyLanguage()
     {
-        $field = [
-            'label' => __('conversation.chooseALanguage'),
-            'key' => 'language',
-            'required' => true,
-            'options' => array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]),
-        ];
-
-        $question = new SelectQuestion($field);
+        $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
+        $question = new SelectLanguageQuestion($surveyLanguages);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedLanguage = $question->getAnswerValue()['value'];
+                $this->selectedLanguage = $question->getAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->askTasks();
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -281,12 +285,6 @@ class SurveyConversation extends Conversation
                 }
 
                 return $this->askCancelOrGoToListOfSurveys();
-            }
-
-            try {
-                $this->selectedLanguage = $selectedLanguage;
-                App::setLocale($this->selectedLanguage);
-                $this->askTasks();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
             }
@@ -433,7 +431,11 @@ class SurveyConversation extends Conversation
     {
         $question = FieldQuestionFactory::create($field);
         $this->ask($question, function (Answer $answer) use ($question, $field) {
-            if (trim($answer->getText()) === '?' && $this->userCanAskForInfo) {
+            if (
+                $question->hasMoreInfo() &&
+                trim($answer->getText()) === self::MORE_INFO_TRIGGER &&
+                $this->userCanAskForInfo
+            ) {
                 $this->userCanAskForInfo = false;
                 $this->repeat();
                 $this->say($question->getMoreInfoContent());
@@ -465,7 +467,9 @@ class SurveyConversation extends Conversation
         if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
             $this->say($question->getHints());
         }
-        $this->say(__('conversation.showMoreInfo'));
+        if ($question->hasMoreInfo()) {
+            $this->say(__('conversation.showMoreInfo'));
+        }
     }
 
     /**

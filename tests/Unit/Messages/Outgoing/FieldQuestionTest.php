@@ -68,6 +68,21 @@ class FieldQuestionTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
+    public function test_has_more_info_returns_true_if_it_does()
+    {
+        $actual = $this->fieldQuestionMock->hasMoreInfo();
+        $this->assertTrue($actual);
+    }
+
+    public function test_has_more_info__returns_false_if_it_does_not()
+    {
+        unset($this->field['instructions']);
+        unset($this->field['translations']);
+
+        $fieldQuestionMock = $this->getMockForAbstractClass(FieldQuestion::class, ['field' => $this->field]);
+        $this->assertFalse($fieldQuestionMock->hasMoreInfo());
+    }
+
     public function test_it_translates_to_the_locale_set()
     {
         $locale = 'es';

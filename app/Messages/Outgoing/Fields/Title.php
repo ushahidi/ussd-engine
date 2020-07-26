@@ -23,6 +23,7 @@ class Title extends TextQuestion
         $rules = parent::getRules();
         $validationRules = [
           'string',
+          'min:2',
           'max:150',
         ];
 

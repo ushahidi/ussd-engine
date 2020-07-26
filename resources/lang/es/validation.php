@@ -12,7 +12,9 @@ return [
     | as the size rules. Feel free to tweak each of these messages here.
     |
     */
-
+    'in'                   => 'El :attribute seleccionado es inválido.',
+    'not_in'               => 'El :attribute seleccionado es inválido.',
+    'required'             => 'El campo :attribute es requerido.',
     /*
     |--------------------------------------------------------------------------
     | Custom Validation Language Lines
