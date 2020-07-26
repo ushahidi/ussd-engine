@@ -51,10 +51,10 @@ class Location extends TextQuestion
     {
         $text = trim($answer->getText());
         $body = [
-            $this->field['key'] => $text ? $this->getCoordinatesFromText($text) : null,
+            $this->name => $text ? $this->getCoordinatesFromText($text) : null,
         ];
 
-        return [$this->name => $location];
+        return $body;
     }
 
     /**
