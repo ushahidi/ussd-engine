@@ -6,26 +6,19 @@ use App\Messages\Outgoing\TextQuestion;
 
 class LongText extends TextQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.longText');
-        parent::__construct($field);
+        return 'long text';
     }
 
     public function getRules(): array
     {
-        $rules = parent::getRules();
-        $validationRules = [
+        $textQuestionRules = parent::getRules();
+        $longTextQuestionRules = [
           'string',
         ];
 
-        $rules[$this->name] = array_merge($rules[$this->name], $validationRules);
+        $rules = array_merge($textQuestionRules, $longTextQuestionRules);
 
         return $rules;
     }
