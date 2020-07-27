@@ -6,28 +6,21 @@ use App\Messages\Outgoing\TextQuestion;
 
 class Title extends TextQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.title');
-        parent::__construct($field);
+        return 'title';
     }
 
     public function getRules(): array
     {
-        $rules = parent::getRules();
-        $validationRules = [
+        $textQuestionRules = parent::getRules();
+        $titleQuestionRules = [
           'string',
           'min:2',
           'max:150',
         ];
 
-        $rules[$this->name] = array_merge($rules[$this->name], $validationRules);
+        $rules = array_merge($textQuestionRules, $titleQuestionRules);
 
         return $rules;
     }
