@@ -7,7 +7,7 @@ use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
 use App\Messages\Outgoing\SelectLanguageQuestion;
-use App\Messages\Outgoing\SelectQuestion;
+use App\Messages\Outgoing\SurveyQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -233,19 +233,12 @@ class SurveyConversation extends Conversation
      */
     protected function askSurvey()
     {
-        $field = [
-            'label' => __('conversation.selectSurvey'),
-            'key' => 'survey',
-            'name' => __('fields.survey'),
-            'required' => true,
-            'options' => $this->surveys->all(),
-        ];
-        $question = new SelectQuestion($field, 'id', 'name');
+        $question = new SurveyQuestion($this->surveys->all());
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedSurvey = $question->getAnswerValue()['value'];
+                $selectedSurvey = $question->getAnswerValue();
                 $this->survey = $this->getSurvey($selectedSurvey);
                 $this->askSurveyLanguage();
             } catch (ValidationException $exception) {
