@@ -190,6 +190,17 @@ class SurveyConversation extends Conversation
     }
 
     /**
+     * Sets the survey for the conversation.
+     *
+     * @param array $survey
+     * @return void
+     */
+    public function setSurvey(array $survey): void
+    {
+        $this->survey = $survey;
+    }
+
+    /**
      * Ask the user to choose a language from the availables on the surveys list.
      * This happens before the survey selection question.
      *
@@ -239,8 +250,12 @@ class SurveyConversation extends Conversation
             try {
                 $question->setAnswer($answer);
                 $selectedSurvey = $question->getAnswerValue();
-                $this->survey = $this->getSurvey($selectedSurvey);
-                $this->askSurveyLanguage();
+                $this->setSurvey($this->getSurvey($selectedSurvey));
+                if ($this->isSurveyAvailableInCurrentLocale()) {
+                    $this->askTasks();
+                } else {
+                    $this->askSurveyLanguage();
+                }
             } catch (ValidationException $exception) {
                 $errors = $exception->validator->errors()->all();
                 foreach ($errors as $error) {
@@ -566,5 +581,29 @@ class SurveyConversation extends Conversation
             Log::error("Couldn't save post: ".$ex->getMessage());
             throw $ex;
         }
+    }
+
+    /**
+     * Returns wether the current survey is available in the current locale or not.
+     *
+     * @return bool
+     */
+    public function isSurveyAvailableInCurrentLocale(): bool
+    {
+        if (! isset($this->survey['enabled_languages'])) {
+            return false;
+        }
+
+        $locale = App::getLocale();
+
+        if (isset($this->survey['enabled_languages']['default']) && $this->survey['enabled_languages']['default'] == $locale) {
+            return true;
+        }
+
+        if (isset($this->survey['enabled_languages']['available']) && in_array($locale, $this->survey['enabled_languages']['available'])) {
+            return true;
+        }
+
+        return false;
     }
 }
