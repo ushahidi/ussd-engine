@@ -42,4 +42,9 @@ abstract class TestCase extends BaseTestCase
         $this->assertInstanceOf(ValidationException::class, $exception);
         $this->assertStringContainsString($error, $this->getFirstErrorMessage($exception));
     }
+
+    protected function validationDidNotFailed()
+    {
+        $this->fail('Validation was expected to fail, but it did not.');
+    }
 }

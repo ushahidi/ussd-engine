@@ -35,7 +35,10 @@ class TitleTest extends TestCase
             $this->titleQuestion->setAnswer($this->answer);
         } catch (\Throwable $ex) {
             $this->assertValidationError('must be at least 2 characters', $ex);
+
+            return;
         }
+        $this->validationDidNotFailed();
     }
 
     public function test_answer_should_be_max_150_characters()
@@ -46,6 +49,9 @@ class TitleTest extends TestCase
             $this->titleQuestion->setAnswer($this->answer);
         } catch (\Throwable $ex) {
             $this->assertValidationError('may not be greater than 150 characters', $ex);
+
+            return;
         }
+        $this->validationDidNotFailed();
     }
 }
