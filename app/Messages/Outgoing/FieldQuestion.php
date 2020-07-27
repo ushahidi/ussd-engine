@@ -10,20 +10,18 @@ use Illuminate\Support\Facades\Validator;
 
 abstract class FieldQuestion extends Question implements FieldQuestionInterface
 {
+    /**
+     * The field data.
+     *
+     * @var array
+     */
     protected $field;
-
-    protected $name;
 
     protected $answerValue;
 
     public function __construct(array $field)
     {
         $this->field = $field;
-
-        if (isset($this->field['name'])) {
-            $this->name = $this->field['name'];
-        }
-
         parent::__construct($this->getTextContent());
     }
 
@@ -59,28 +57,62 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         return ! empty($this->getMoreInfoContent());
     }
 
-    public function setName(string $name): void
-    {
-        $this->name = $name;
-    }
+    /**
+     * Returns the attribute name to be use when performing
+     * translations and validations.
+     *
+     * Make sure you add this attribute with the custom atribute name
+     * in your lang files.
+     *
+     * @return string
+     */
+    abstract public function getAttributeName(): string;
 
-    abstract public function getAnswerBody(Answer $answer): array;
+    /**
+     * Extract the value to be  validated from the Answer object.
+     *
+     * @param Answer $answer
+     * @return mixed
+     */
+    abstract public function getValueFromAnswer(Answer $answer);
 
+    /**
+     * Extract, validate and set the value from the provided Answer object.
+     *
+     * @param Answer $answer
+     * @return void
+     */
     public function setAnswer(Answer $answer)
     {
-        $validated = $this->validate($this->getAnswerBody($answer));
-        $this->answerValue = $validated[$this->name];
+        $this->answerValue = $this->validate($answer);
     }
 
-    public function validate(array $body)
+    /**
+     * Extract, validate and return the value from the provided Answer class.
+     *
+     * It uses the rules, data and messages returned by each respective method.
+     *
+     * @param Answer $answer
+     * @return mixed
+     */
+    public function validate(Answer $answer)
     {
+        $attributeName = $this->getAttributeName();
+        $data = [$attributeName => $this->getValueFromAnswer($answer)];
+
         $rules = $this->getRules();
+
+        if (! Arr::isAssoc($rules)) {
+            $rules = [$attributeName => $rules];
+        }
 
         $messages = $this->getValidationMessages();
 
-        $validator = Validator::make($body, $rules, $messages);
+        $validator = Validator::make($data, $rules, $messages);
 
-        return $validator->validate();
+        $validated = $validator->validate();
+
+        return $validated[$attributeName];
     }
 
     /**
@@ -93,6 +125,11 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         return [];
     }
 
+    /**
+     * Return an array of validation rules to be used when validating the answer input.
+     *
+     * @return array
+     */
     abstract public function getRules(): array;
 
     /**
@@ -105,8 +142,10 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         return [
             'id' => $this->field['id'],
             'type' => $this->field['type'],
-            'value' => $this->getAnswerValue(),
-          ];
+            'value' => [
+                'value' => $this->getAnswerValue(),
+            ],
+        ];
     }
 
     /**
@@ -142,7 +181,15 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         return isset($context['translations']) && ! empty($context['translations']);
     }
 
-    abstract public function getAnswerValue();
+    /**
+     * Returns the value obtained from the answer.
+     *
+     * @return mixed
+     */
+    public function getAnswerValue()
+    {
+        return $this->answerValue;
+    }
 
     /**
      * Used to know if the hints for this question should be shown by default.

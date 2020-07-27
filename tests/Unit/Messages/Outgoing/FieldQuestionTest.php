@@ -4,7 +4,6 @@ namespace Tests\Unit\Messages\Outgoing;
 
 use App\Messages\Outgoing\FieldQuestion;
 use BotMan\BotMan\Messages\Incoming\Answer;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
 use Tests\TestCase;
 
@@ -22,7 +21,6 @@ class FieldQuestionTest extends TestCase
             'id' => 1,
             'type' => 'varchar',
             'key' => 'test-field',
-            'name' => 'testField',
             'label' => 'My awesome field',
             'instructions' => 'Some helpful instructions',
             'translations' => [
@@ -134,37 +132,33 @@ class FieldQuestionTest extends TestCase
 
     public function test_returns_the_correct_answer_response()
     {
-        $value = ['value' => 'This is the value'];
-
-        $this->fieldQuestionMock->method('getAnswerValue')->willReturn($value);
+        $value = 'This is the value';
+        $answer = new Answer($value);
+        $this->fieldQuestionMock->method('validate')->willReturn($value);
 
         $expected = [
             'id' => $this->field['id'],
             'type' => $this->field['type'],
-            'value' => $value,
+            'value' => ['value' => $value],
         ];
 
+        $this->fieldQuestionMock->setAnswer($answer);
         $actual = $this->fieldQuestionMock->getAnswerResponse();
 
         $this->assertEquals($expected, $actual);
     }
 
-    public function test_it_sets_answer()
+    public function test_it_sets_and_validate_answer()
     {
         $text = 'Answer text';
         $answer = new Answer($text);
-        $answerBody = [$this->field['name'] => $answer->getText()];
-
-        $this->fieldQuestionMock->expects($this->once())
-        ->method('getAnswerBody')
-        ->with($this->equalTo($answer))
-        ->willReturn($answerBody);
-
         $this->fieldQuestionMock->expects($this->once())
                                 ->method('validate')
-                                ->with($this->equalTo($answerBody))
-                                ->willReturn($answerBody);
+                                ->with($this->equalTo($answer))
+                                ->willReturn($text);
 
         $this->fieldQuestionMock->setAnswer($answer);
+
+        $this->assertEquals($text, $this->fieldQuestionMock->getAnswerValue());
     }
 }
