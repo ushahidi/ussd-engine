@@ -6,27 +6,32 @@ use App\Messages\Outgoing\TextQuestion;
 
 class Date extends TextQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.date');
-        parent::__construct($field);
+        return 'date';
     }
 
     public function getRules(): array
     {
-        $rules = parent::getRules();
-        $validationRules = [
-          'date',
-        ];
-
-        $rules[$this->name] = array_merge($rules[$this->name], $validationRules);
+        $textQuestionRules = parent::getRules();
+        $dateQuestionRules = ['date'];
+        $rules = array_merge($textQuestionRules, $dateQuestionRules);
 
         return $rules;
+    }
+
+    public function shouldShowHintsByDefault(): bool
+    {
+        return true;
+    }
+
+    public function hasHints(): bool
+    {
+        return true;
+    }
+
+    public function getHints(): string
+    {
+        return __('conversation.hints.date');
     }
 }
