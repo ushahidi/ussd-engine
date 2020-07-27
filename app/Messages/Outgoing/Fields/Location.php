@@ -7,38 +7,29 @@ use BotMan\BotMan\Messages\Incoming\Answer;
 
 class Location extends TextQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.location');
-        parent::__construct($field);
+        return 'location';
     }
 
     public function getRules(): array
     {
-        $validationRules = [
-            'nullable',
+        $attributeName = $this->getAttributeName();
+
+        $locationRules = [
+            $this->field['required'] ? 'required' : 'nullable',
             'array',
         ];
 
-        if ($this->field['required']) {
-            array_unshift($validationRules, 'required');
-        }
-
         $rules = [
-            $this->name  => $validationRules,
-            $this->name.'.latitude' => [
-                'required_with:'.$this->field['key'],
+            $attributeName  => $locationRules,
+            $attributeName.'.latitude' => [
+                'required_with:'.$attributeName,
                 'numeric',
                 'between:-90,90',
             ],
-            $this->name.'.longitude' => [
-                'required_with:'.$this->field['key'],
+            $attributeName.'.longitude' => [
+                'required_with:'.$attributeName,
                 'numeric',
                 'between:-180,180',
             ],
@@ -47,14 +38,11 @@ class Location extends TextQuestion
         return $rules;
     }
 
-    public function getAnswerBody(Answer $answer): array
+    public function getValueFromAnswer(Answer $answer)
     {
         $text = trim($answer->getText());
-        $body = [
-            $this->name => $text ? $this->getCoordinatesFromText($text) : null,
-        ];
 
-        return $body;
+        return  $text ? $this->getCoordinatesFromText($text) : null;
     }
 
     /**
@@ -76,18 +64,21 @@ class Location extends TextQuestion
 
     public function getAnswerValue()
     {
-        $value = null;
+        $location = null;
 
         if ($this->answerValue) {
-            $value = [
+            $location = [
                 'lat' => $this->answerValue['latitude'],
                 'lon' => $this->answerValue['longitude'],
             ];
         }
 
-        return [
-          'value' => $value,
-        ];
+        return $location;
+    }
+
+    public function shouldShowHintsByDefault(): bool
+    {
+        return true;
     }
 
     /**
