@@ -6,23 +6,16 @@ use App\Messages\Outgoing\TextQuestion;
 
 class Integer extends TextQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.integer');
-        parent::__construct($field);
+        return 'integer';
     }
 
     public function getRules(): array
     {
-        $rules = parent::getRules();
-        $validationRules = ['integer'];
-        $rules[$this->name] = array_merge($rules[$this->name], $validationRules);
+        $textQuestionRules = parent::getRules();
+        $integerQuestionRules = ['integer'];
+        $rules = array_merge($integerQuestionRules, $textQuestionRules);
 
         return $rules;
     }
