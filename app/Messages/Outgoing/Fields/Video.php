@@ -7,14 +7,10 @@ use App\Messages\Outgoing\TextQuestion;
 class Video extends TextQuestion
 {
     /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
+     * {@inheritdoc}
      */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.video');
-        parent::__construct($field);
+        return 'video';
     }
 }
