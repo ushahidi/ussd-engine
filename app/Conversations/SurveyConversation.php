@@ -6,7 +6,7 @@ use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
-use App\Messages\Outgoing\SelectLanguageQuestion;
+use App\Messages\Outgoing\LanguageQuestion;
 use App\Messages\Outgoing\SurveyQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
@@ -204,7 +204,7 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $question = new SelectLanguageQuestion($availableLanguagesList);
+        $question = new LanguageQuestion($availableLanguagesList);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
@@ -263,7 +263,7 @@ class SurveyConversation extends Conversation
     protected function askSurveyLanguage()
     {
         $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
-        $question = new SelectLanguageQuestion($surveyLanguages);
+        $question = new LanguageQuestion($surveyLanguages);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
