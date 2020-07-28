@@ -438,7 +438,7 @@ class SurveyConversation extends Conversation
             }
             try {
                 $question->setAnswer($answer);
-                $this->answers[] = $question->getAnswerResponse();
+                $this->answers[] = $question->toUshahidiPlatformPayload();
             } catch (ValidationException $exception) {
                 $this->userCanAskForInfo = true;
 

@@ -130,7 +130,7 @@ class FieldQuestionTest extends TestCase
         $this->assertFalse($actual);
     }
 
-    public function test_returns_the_correct_answer_response()
+    public function test_returns_the_correct_structure_for_the_ushahidi_platform()
     {
         $value = 'This is the value';
         $answer = new Answer($value);
@@ -143,7 +143,7 @@ class FieldQuestionTest extends TestCase
         ];
 
         $this->fieldQuestionMock->setAnswer($answer);
-        $actual = $this->fieldQuestionMock->getAnswerResponse();
+        $actual = $this->fieldQuestionMock->toUshahidiPlatformPayload();
 
         $this->assertEquals($expected, $actual);
     }
