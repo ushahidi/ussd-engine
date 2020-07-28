@@ -137,7 +137,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      *
      * @return array
      */
-    public function toUshahidiPlatformPayload(): array
+    public function toPayload(): array
     {
         return [
             'id' => $this->field['id'],

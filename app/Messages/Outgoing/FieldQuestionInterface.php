@@ -18,7 +18,7 @@ interface FieldQuestionInterface
 
     public function getValueFromAnswer(Answer $answer);
 
-    public function toUshahidiPlatformPayload(): array;
+    public function toPayload(): array;
 
     public function hasHints(): bool;
 
