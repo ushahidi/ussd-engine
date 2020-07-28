@@ -21,5 +21,6 @@ return [
   'hints' => [
     'checkboxes' => 'Pista: Selecciona todas las que califiquen usando el formato de valores separados por coma. Ejemplo: 1,2',
     'location' => 'Pista: Envia la lalitud y longitud  usando el formato de valores separados por coma. Ejemplo: 18.7527845,-71.3075768',
+    'date' => 'Formato soportado: YYYY-MM-DD',
   ],
 ];

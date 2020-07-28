@@ -21,7 +21,7 @@ class SelectQuestion extends FieldQuestion
         $this->valueAccessor = $valueAccessor;
         $this->displayAccessor = $displayAccessor;
 
-        $this->addButtons($this->getButtons());
+        $this->addButtons($this->convertOptionsToButtons());
     }
 
     /**
@@ -40,7 +40,7 @@ class SelectQuestion extends FieldQuestion
      *
      * @return array
      */
-    public function getButtons(): array
+    public function convertOptionsToButtons(): array
     {
         $buttons = [];
         foreach ($this->field['options'] as $index => $value) {
@@ -58,34 +58,36 @@ class SelectQuestion extends FieldQuestion
         return $buttons;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function getAttributeName(): string
+    {
+        return 'option';
+    }
+
     public function getRules(): array
     {
-        $validationRules = [];
+        $rules = [];
 
         if ($this->field['required']) {
-            $validationRules[] = 'required';
+            $rules[] = 'required';
         }
 
-        $validationRules[] = Rule::in(array_keys($this->optionsMap));
-
-        $rules = [
-          $this->name  => $validationRules,
-        ];
+        $rules[] = Rule::in(array_keys($this->optionsMap));
 
         return $rules;
     }
 
-    public function getAnswerBody(Answer $answer): array
+    public function getValueFromAnswer(Answer $answer)
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->name => $value];
+        return $value;
     }
 
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
-        return [
-          'value' => $this->answerValue ? $this->optionsMap[$this->answerValue] : null,
-        ];
+        return $this->answerValue ? $this->optionsMap[$this->answerValue] : null;
     }
 }

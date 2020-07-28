@@ -116,6 +116,26 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        'title' => 'title',
+        'description' => 'description',
+        'survey' => 'survey',
+        'language' => 'language',
+        'short text' => 'text',
+        'long text' => 'text',
+        'video' => 'video',
+        'radio buttons' => 'option',
+        'categories' => 'category',
+        'checkboxes' => 'option',
+        'image' => 'image',
+        'markdown' => 'markdown',
+        'integer' => 'number',
+        'decimal' => 'number',
+        'date' => 'date',
+        'datetime' => 'datetime',
+        'location' => 'location',
+        'location.latitude' => 'latitude',
+        'location.longitude' => 'longitude',
+    ],
 
 ];

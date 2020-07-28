@@ -4,7 +4,7 @@ namespace App\Messages\Outgoing;
 
 use App\Messages\Outgoing\SelectQuestion;
 
-class SelectLanguageQuestion extends SelectQuestion
+class LanguageQuestion extends SelectQuestion
 {
     /**
      * Construct a language selection question with the provided languages list.
@@ -16,7 +16,6 @@ class SelectLanguageQuestion extends SelectQuestion
         $field = [
           'label' => __('conversation.chooseALanguage'),
           'key' => 'language',
-          'name' =>  __('fields.language'),
           'required' => true,
           'options' => $availableLanguages,
         ];
@@ -24,12 +23,10 @@ class SelectLanguageQuestion extends SelectQuestion
     }
 
     /**
-     * Returns the selected language.
-     *
-     * @return string|null
+     * {@inheritdoc}
      */
-    public function getAnswerValue()
+    public function getAttributeName(): string
     {
-        return $this->answerValue ? $this->optionsMap[$this->answerValue] : null;
+        return 'language';
     }
 }

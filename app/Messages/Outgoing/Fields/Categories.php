@@ -10,44 +10,45 @@ class Categories extends SelectQuestion
 {
     public function __construct(array $field)
     {
-        $field['name'] = __('fields.categories');
         parent::__construct($field, 'id', 'tag');
+    }
+
+    public function getAttributeName(): string
+    {
+        return 'categories';
     }
 
     public function getRules(): array
     {
-        $validationRules = [];
+        $attributeName = $this->getAttributeName();
 
-        if ($this->field['required']) {
-            $validationRules[] = 'required';
-        }
-
-        $validationRules[] = 'array';
+        $checkboxesRules = [
+            $this->field['required'] ? 'required' : 'nullable',
+            'array',
+        ];
 
         $rules = [
-        $this->name  => $validationRules,
-        $this->name.'.*'  => Rule::in(array_keys($this->optionsMap)),
-      ];
+          $attributeName  => $checkboxesRules,
+          $attributeName.'.*'  => Rule::in(array_keys($this->optionsMap)),
+        ];
 
         return $rules;
     }
 
-    public function getAnswerBody(Answer $answer): array
+    public function getValueFromAnswer(Answer $answer)
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->name => explode(',', $value)];
+        return $value ? explode(',', $value) : [];
     }
 
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
-        $values = [];
+        $selectedCategories = [];
         foreach ($this->answerValue as $option) {
-            $values[] = $this->optionsMap[$option];
+            $selectedCategories[] = $this->optionsMap[$option];
         }
 
-        return [
-            'value' => $values,
-        ];
+        return $selectedCategories;
     }
 }

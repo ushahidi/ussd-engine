@@ -2,17 +2,17 @@
 
 namespace Tests\Unit\Messages\Outgoing;
 
-use App\Messages\Outgoing\SelectLanguageQuestion;
+use App\Messages\Outgoing\LanguageQuestion;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
-class SelectLanguageQuestionTest extends TestCase
+class LanguageQuestionTest extends TestCase
 {
     protected $languages;
 
     /**
-     * @var  \App\Messages\Outgoing\SelectLanguageQuestion
+     * @var  \App\Messages\Outgoing\LanguageQuestion
      */
     protected $question;
 
@@ -21,7 +21,7 @@ class SelectLanguageQuestionTest extends TestCase
         parent::setUp();
 
         $this->languages = ['en', 'es'];
-        $this->question = new SelectLanguageQuestion($this->languages);
+        $this->question = new LanguageQuestion($this->languages);
     }
 
     public function test_it_creates_the_select_question_with_languages()
@@ -52,11 +52,11 @@ class SelectLanguageQuestionTest extends TestCase
     public function test_it_returns_a_valid_language_as_answer_value()
     {
         $this->question->setAnswer(new Answer('1'));
-        $this->assertContains($this->question->getAnswerValue(), $this->languages);
+        $this->assertContains($this->question->getValidatedAnswerValue(), $this->languages);
     }
 
     public function test_it_returns_null_if_no_ansver()
     {
-        $this->assertNull($this->question->getAnswerValue());
+        $this->assertNull($this->question->getValidatedAnswerValue());
     }
 }

@@ -6,8 +6,8 @@ use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
-use App\Messages\Outgoing\SelectLanguageQuestion;
-use App\Messages\Outgoing\SelectQuestion;
+use App\Messages\Outgoing\LanguageQuestion;
+use App\Messages\Outgoing\SurveyQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -215,12 +215,12 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $question = new SelectLanguageQuestion($availableLanguagesList);
+        $question = new LanguageQuestion($availableLanguagesList);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askSurvey();
             } catch (ValidationException $exception) {
@@ -244,19 +244,12 @@ class SurveyConversation extends Conversation
      */
     protected function askSurvey()
     {
-        $field = [
-            'label' => __('conversation.selectSurvey'),
-            'key' => 'survey',
-            'name' => __('fields.survey'),
-            'required' => true,
-            'options' => $this->surveys->all(),
-        ];
-        $question = new SelectQuestion($field, 'id', 'name');
+        $question = new SurveyQuestion($this->surveys->all());
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedSurvey = $question->getAnswerValue()['value'];
+                $selectedSurvey = $question->getValidatedAnswerValue();
                 $this->setSurvey($this->getSurvey($selectedSurvey));
                 if ($this->isSurveyAvailableInCurrentLocale()) {
                     $this->askTasks();
@@ -285,12 +278,12 @@ class SurveyConversation extends Conversation
     protected function askSurveyLanguage()
     {
         $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
-        $question = new SelectLanguageQuestion($surveyLanguages);
+        $question = new LanguageQuestion($surveyLanguages);
 
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askTasks();
             } catch (ValidationException $exception) {
@@ -460,7 +453,7 @@ class SurveyConversation extends Conversation
             }
             try {
                 $question->setAnswer($answer);
-                $this->answers[] = $question->getAnswerResponse();
+                $this->answers[] = $question->toPayload();
             } catch (ValidationException $exception) {
                 $this->userCanAskForInfo = true;
 

@@ -6,30 +6,33 @@ use BotMan\BotMan\Messages\Incoming\Answer;
 
 class TextQuestion extends FieldQuestion
 {
+    /**
+     * {@inheritdoc}
+     */
+    public function getAttributeName(): string
+    {
+        return 'text';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getRules(): array
     {
-        $validationRules = [];
+        $rules = [];
 
         if ($this->field['required']) {
-            $validationRules[] = 'required';
+            $rules[] = 'required';
         }
-
-        $rules = [
-          $this->name  => $validationRules,
-        ];
 
         return $rules;
     }
 
-    public function getAnswerBody(Answer $answer): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getValueFromAnswer(Answer $answer)
     {
-        return [$this->name => $answer->getText()];
-    }
-
-    public function getAnswerValue()
-    {
-        return [
-          'value' => $this->answerValue,
-        ];
+        return $answer->getText();
     }
 }

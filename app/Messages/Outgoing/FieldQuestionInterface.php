@@ -12,13 +12,13 @@ interface FieldQuestionInterface
 
     public function setAnswer(Answer $answer);
 
-    public function validate(array $answer);
+    public function validate(Answer $answer);
 
     public function getRules(): array;
 
-    public function getAnswerBody(Answer $answer): array;
+    public function getValueFromAnswer(Answer $answer);
 
-    public function getAnswerResponse(): array;
+    public function toPayload(): array;
 
     public function hasHints(): bool;
 

@@ -8,53 +8,43 @@ use Illuminate\Validation\Rule;
 
 class Checkboxes extends SelectQuestion
 {
-    /**
-     * Sets the translated name for this field
-     * before parent constructor is executed.
-     *
-     * @param array $field
-     */
-    public function __construct(array $field)
+    public function getAttributeName(): string
     {
-        $field['name'] = __('fields.checkboxes');
-        parent::__construct($field);
+        return 'checkboxes';
     }
 
     public function getRules(): array
     {
-        $validationRules = [];
+        $attributeName = $this->getAttributeName();
 
-        if ($this->field['required']) {
-            $validationRules[] = 'required';
-        }
-
-        $validationRules[] = 'array';
+        $checkboxesRules = [
+            $this->field['required'] ? 'required' : 'nullable',
+            'array',
+        ];
 
         $rules = [
-          $this->name  => $validationRules,
-          $this->name.'.*'  => Rule::in(array_keys($this->optionsMap)),
+          $attributeName  => $checkboxesRules,
+          $attributeName.'.*'  => Rule::in(array_keys($this->optionsMap)),
         ];
 
         return $rules;
     }
 
-    public function getAnswerBody(Answer $answer): array
+    public function getValueFromAnswer(Answer $answer)
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
-        return [$this->name => explode(',', $value)];
+        return $value ? explode(',', $value) : [];
     }
 
-    public function getAnswerValue(): array
+    public function getValidatedAnswerValue(): array
     {
-        $values = [];
+        $selectedOptions = [];
         foreach ($this->answerValue as $option) {
-            $values[] = $this->optionsMap[$option];
+            $selectedOptions[] = $this->optionsMap[$option];
         }
 
-        return [
-          'value' => $values,
-        ];
+        return $selectedOptions;
     }
 
     /**
