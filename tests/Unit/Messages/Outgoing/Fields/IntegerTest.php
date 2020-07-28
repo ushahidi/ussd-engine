@@ -33,7 +33,7 @@ class IntegerTest extends TestCase
 
         $this->integerQuestion->setAnswer($this->answer);
 
-        $this->assertEquals($integer, $this->integerQuestion->getAnswerValue());
+        $this->assertEquals($integer, $this->integerQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_throws_error_if_answer_is_not_a_number()

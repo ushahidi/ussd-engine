@@ -209,7 +209,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askSurvey();
             } catch (ValidationException $exception) {
@@ -238,7 +238,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $selectedSurvey = $question->getAnswerValue();
+                $selectedSurvey = $question->getValidatedAnswerValue();
                 $this->survey = $this->getSurvey($selectedSurvey);
                 $this->askSurveyLanguage();
             } catch (ValidationException $exception) {
@@ -268,7 +268,7 @@ class SurveyConversation extends Conversation
         $this->ask($question, function (Answer $answer) use ($question) {
             try {
                 $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getAnswerValue();
+                $this->selectedLanguage = $question->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askTasks();
             } catch (ValidationException $exception) {

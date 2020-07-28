@@ -62,7 +62,7 @@ class Location extends TextQuestion
         return $location;
     }
 
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
         $location = null;
 

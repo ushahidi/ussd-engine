@@ -143,7 +143,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
             'id' => $this->field['id'],
             'type' => $this->field['type'],
             'value' => [
-                'value' => $this->getAnswerValue(),
+                'value' => $this->getValidatedAnswerValue(),
             ],
         ];
     }
@@ -186,7 +186,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      *
      * @return mixed
      */
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
         return $this->answerValue;
     }

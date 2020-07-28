@@ -42,7 +42,7 @@ class Categories extends SelectQuestion
         return $value ? explode(',', $value) : [];
     }
 
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
         $selectedCategories = [];
         foreach ($this->answerValue as $option) {

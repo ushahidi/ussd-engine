@@ -82,7 +82,7 @@ class SelectQuestionTest extends TestCase
 
         $selectQuestion->setAnswer(Answer::create());
 
-        $this->assertNull($selectQuestion->getAnswerValue());
+        $this->assertNull($selectQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_returns_text_from_answer_as_value()
@@ -127,6 +127,6 @@ class SelectQuestionTest extends TestCase
 
         $selectQuestion->setAnswer(Answer::create('2'));
 
-        $this->assertEquals('B', $selectQuestion->getAnswerValue());
+        $this->assertEquals('B', $selectQuestion->getValidatedAnswerValue());
     }
 }

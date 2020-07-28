@@ -52,11 +52,11 @@ class LanguageQuestionTest extends TestCase
     public function test_it_returns_a_valid_language_as_answer_value()
     {
         $this->question->setAnswer(new Answer('1'));
-        $this->assertContains($this->question->getAnswerValue(), $this->languages);
+        $this->assertContains($this->question->getValidatedAnswerValue(), $this->languages);
     }
 
     public function test_it_returns_null_if_no_ansver()
     {
-        $this->assertNull($this->question->getAnswerValue());
+        $this->assertNull($this->question->getValidatedAnswerValue());
     }
 }

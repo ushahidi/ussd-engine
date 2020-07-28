@@ -68,7 +68,7 @@ class CategoriesTest extends TestCase
 
         $categoriesQuestion->setAnswer(Answer::create());
 
-        $this->assertEquals([], $categoriesQuestion->getAnswerValue());
+        $this->assertEquals([], $categoriesQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_returns_selected_categories_from_answer_as_value()
@@ -145,7 +145,7 @@ class CategoriesTest extends TestCase
 
         $categoriesQuestion->setAnswer(Answer::create('2'));
 
-        $this->assertEquals([2], $categoriesQuestion->getAnswerValue());
+        $this->assertEquals([2], $categoriesQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_does_accept_multiple_valid_categories()
@@ -154,6 +154,6 @@ class CategoriesTest extends TestCase
 
         $categoriesQuestion->setAnswer(Answer::create('2,3'));
 
-        $this->assertEquals([2, 3], $categoriesQuestion->getAnswerValue());
+        $this->assertEquals([2, 3], $categoriesQuestion->getValidatedAnswerValue());
     }
 }

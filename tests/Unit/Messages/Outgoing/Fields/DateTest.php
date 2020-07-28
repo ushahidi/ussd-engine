@@ -33,7 +33,7 @@ class DateTest extends TestCase
 
         $this->dateQuestion->setAnswer($this->answer);
 
-        $this->assertEquals($date, $this->dateQuestion->getAnswerValue());
+        $this->assertEquals($date, $this->dateQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_throws_error_if_answer_is_not_a_valid_date()

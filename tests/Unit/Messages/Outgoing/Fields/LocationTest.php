@@ -48,7 +48,7 @@ class LocationTest extends TestCase
 
         $locationQuestion->setAnswer(Answer::create());
 
-        $this->assertNull($locationQuestion->getAnswerValue());
+        $this->assertNull($locationQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_returns_coordinates_from_answer_as_value()

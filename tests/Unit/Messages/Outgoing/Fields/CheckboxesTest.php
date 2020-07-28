@@ -81,7 +81,7 @@ class CheckboxesTest extends TestCase
 
         $checkboxesQuestion->setAnswer(Answer::create());
 
-        $this->assertEquals([], $checkboxesQuestion->getAnswerValue());
+        $this->assertEquals([], $checkboxesQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_returns_selected_options_from_answer_as_value()
@@ -162,7 +162,7 @@ class CheckboxesTest extends TestCase
 
         $checkboxesQuestion->setAnswer(Answer::create('2'));
 
-        $this->assertEquals(['B'], $checkboxesQuestion->getAnswerValue());
+        $this->assertEquals(['B'], $checkboxesQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_does_accept_multiple_valid_options()
@@ -172,6 +172,6 @@ class CheckboxesTest extends TestCase
 
         $checkboxesQuestion->setAnswer(Answer::create('2,3'));
 
-        $this->assertEquals(['B', 'C'], $checkboxesQuestion->getAnswerValue());
+        $this->assertEquals(['B', 'C'], $checkboxesQuestion->getValidatedAnswerValue());
     }
 }

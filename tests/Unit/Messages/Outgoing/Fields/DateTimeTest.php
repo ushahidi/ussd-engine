@@ -33,7 +33,7 @@ class DateTimeTest extends TestCase
 
         $this->dateTimeQuestion->setAnswer($this->answer);
 
-        $this->assertEquals($dateTime, $this->dateTimeQuestion->getAnswerValue());
+        $this->assertEquals($dateTime, $this->dateTimeQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_throws_error_if_answer_is_not_a_valid_dateTime()

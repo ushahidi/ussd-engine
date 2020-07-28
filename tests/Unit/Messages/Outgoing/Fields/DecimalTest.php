@@ -33,7 +33,7 @@ class DecimalTest extends TestCase
 
         $this->decimalQuestion->setAnswer($this->answer);
 
-        $this->assertEquals($decimal, $this->decimalQuestion->getAnswerValue());
+        $this->assertEquals($decimal, $this->decimalQuestion->getValidatedAnswerValue());
     }
 
     public function test_it_throws_error_if_answer_is_not_a_number()

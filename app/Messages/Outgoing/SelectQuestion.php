@@ -86,7 +86,7 @@ class SelectQuestion extends FieldQuestion
         return $value;
     }
 
-    public function getAnswerValue()
+    public function getValidatedAnswerValue()
     {
         return $this->answerValue ? $this->optionsMap[$this->answerValue] : null;
     }

@@ -37,7 +37,7 @@ class Checkboxes extends SelectQuestion
         return $value ? explode(',', $value) : [];
     }
 
-    public function getAnswerValue(): array
+    public function getValidatedAnswerValue(): array
     {
         $selectedOptions = [];
         foreach ($this->answerValue as $option) {

@@ -159,6 +159,6 @@ class FieldQuestionTest extends TestCase
 
         $this->fieldQuestionMock->setAnswer($answer);
 
-        $this->assertEquals($text, $this->fieldQuestionMock->getAnswerValue());
+        $this->assertEquals($text, $this->fieldQuestionMock->getValidatedAnswerValue());
     }
 }
