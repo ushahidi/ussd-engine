@@ -7,6 +7,7 @@ use App\Exceptions\NoSurveyTasksException;
 use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
 use App\Messages\Outgoing\LanguageQuestion;
+use App\Messages\Outgoing\QuestionScreen;
 use App\Messages\Outgoing\SurveyQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
@@ -215,12 +216,17 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $question = new LanguageQuestion($availableLanguagesList);
+        $questionScreen = new QuestionScreen(new LanguageQuestion($availableLanguagesList));
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getValidatedAnswerValue();
+                $questionScreen->setAnswer($answer);
+
+                if ($questionScreen->shouldRepeat()) {
+                    return $this->repeat($questionScreen->getText());
+                }
+
+                $this->selectedLanguage = $questionScreen->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askSurvey();
             } catch (ValidationException $exception) {
@@ -245,11 +251,16 @@ class SurveyConversation extends Conversation
     protected function askSurvey()
     {
         $question = new SurveyQuestion($this->surveys->all());
+        $questionScreen = new QuestionScreen($question);
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $selectedSurvey = $question->getValidatedAnswerValue();
+                $questionScreen->setAnswer($answer);
+
+                if ($questionScreen->shouldRepeat()) {
+                    return $this->repeat($questionScreen->getText());
+                }
+                $selectedSurvey = $questionScreen->getValidatedAnswerValue();
                 $this->setSurvey($this->getSurvey($selectedSurvey));
                 if ($this->isSurveyAvailableInCurrentLocale()) {
                     $this->askTasks();
@@ -278,12 +289,12 @@ class SurveyConversation extends Conversation
     protected function askSurveyLanguage()
     {
         $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
-        $question = new LanguageQuestion($surveyLanguages);
+        $questionScreen = new QuestionScreen(new LanguageQuestion($surveyLanguages));
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getValidatedAnswerValue();
+                $questionScreen->setAnswer($answer);
+                $this->selectedLanguage = $questionScreen->getValidatedAnswerValue();
                 App::setLocale($this->selectedLanguage);
                 $this->askTasks();
             } catch (ValidationException $exception) {
@@ -438,22 +449,16 @@ class SurveyConversation extends Conversation
     private function askField(array $field)
     {
         $question = FieldQuestionFactory::create($field);
-        $this->ask($question, function (Answer $answer) use ($question, $field) {
-            if (
-                $question->hasMoreInfo() &&
-                trim($answer->getText()) === self::MORE_INFO_TRIGGER &&
-                $this->userCanAskForInfo
-            ) {
-                $this->userCanAskForInfo = false;
-                $this->repeat();
-                $this->say($question->getMoreInfoContent());
-                $this->say(__('conversation.requestToFillIn'));
+        $questionScreen = new QuestionScreen($question);
 
-                return;
-            }
+        $this->ask($questionScreen, function (Answer $answer) use ($questionScreen, $field) {
             try {
-                $question->setAnswer($answer);
-                $this->answers[] = $question->toPayload();
+                $questionScreen->setAnswer($answer);
+
+                if ($questionScreen->shouldRepeat()) {
+                    return $this->repeat($questionScreen->getText());
+                }
+                $this->answers[] = $questionScreen->getQuestion()->toPayload();
             } catch (ValidationException $exception) {
                 $this->userCanAskForInfo = true;
 
@@ -462,22 +467,12 @@ class SurveyConversation extends Conversation
                     $this->say($error);
                 }
 
-                if ($question->hasHints()) {
-                    $this->say($question->getHints());
-                }
-
                 return $this->repeat();
             }
 
             $this->fields->forget($field['id']);
             $this->askNextField();
         });
-        if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
-            $this->say($question->getHints());
-        }
-        if ($question->hasMoreInfo()) {
-            $this->say(__('conversation.showMoreInfo'));
-        }
     }
 
     /**

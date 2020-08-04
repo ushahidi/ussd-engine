@@ -220,4 +220,14 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     {
         return '';
     }
+
+    /**
+     * Indicates if this question is required or not.
+     *
+     * @return bool
+     */
+    public function isRequired(): bool
+    {
+        return $this->field['required'];
+    }
 }

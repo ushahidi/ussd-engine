@@ -23,4 +23,22 @@ return [
     'location' => 'Hint: Send latitude and longitude using a comma separated format. Example: 18.7527845,-71.3075768',
     'date' => 'Supported date format: YYYY-MM-DD',
   ],
+  'screen' => [
+    'next' => [
+      'value' => 'N',
+      'text' => 'Next',
+    ],
+    'previous' => [
+      'value' => 'P',
+      'text' => 'Previous',
+    ],
+    'skip' => [
+      'value' => 'S',
+      'text' => 'Skip',
+    ],
+    'info' => [
+      'value' => '?',
+      'text' => 'Show more information',
+    ],
+  ],
 ];

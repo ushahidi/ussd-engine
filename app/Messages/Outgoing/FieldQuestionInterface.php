@@ -23,4 +23,6 @@ interface FieldQuestionInterface
     public function hasHints(): bool;
 
     public function getHints(): string;
+
+    public function isRequired(): bool;
 }
