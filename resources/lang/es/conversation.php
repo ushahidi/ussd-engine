@@ -14,7 +14,7 @@ return [
   'sorryIDidntCatchThat' => ' Perdón, no lo he entendido',
   'whatDoYouWantToDo' => '¿Qué quieres hacer ahora?',
   'thankYou' => 'Gracias',
-  'shouldSendResponses' => 'No hay más preguntas. Confirma que quieres enviar tus respuestas enviando "SI". Cancela el formulario enviando "NO" o "0000"',
+  'shouldSendResponses' => 'No hay más preguntas. ¿Quieres enviar tus respuestas?',
   'yes' => 'SI',
   'no' => 'NO',
   'requestToFillIn' => 'Por favor, responde la pregunta.',
@@ -23,4 +23,27 @@ return [
     'location' => 'Pista: Envia la lalitud y longitud  usando el formato de valores separados por coma. Ejemplo: 18.7527845,-71.3075768',
     'date' => 'Formato soportado: YYYY-MM-DD',
   ],
+  'screen' => [
+    'next' => [
+      'value' => 'N',
+      'text' => 'Siguiente',
+    ],
+    'previous' => [
+      'value' => 'P',
+      'text' => 'Anterior',
+    ],
+    'skip' => [
+      'value' => 'S',
+      'text' => 'Saltar',
+    ],
+    'info' => [
+      'value' => '?',
+      'text' => 'Mostrar instrucciones',
+    ],
+    'ok' => [
+      'value' => 'O',
+      'text' => 'Entendido',
+    ],
+  ],
+  'omissionIndicator' => '...',
 ];

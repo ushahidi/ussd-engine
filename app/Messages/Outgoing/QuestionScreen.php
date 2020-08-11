@@ -2,21 +2,15 @@
 
 namespace App\Messages\Outgoing;
 
+use App\Messages\Outgoing\FieldQuestion;
+use App\Messages\Outgoing\Screen\AbstractScreen;
 use App\Messages\Outgoing\Screen\Option;
 use App\Messages\Outgoing\Screen\Page;
 use BotMan\BotMan\Messages\Incoming\Answer;
-use BotMan\BotMan\Messages\Outgoing\Question;
 use Illuminate\Validation\ValidationException;
 
-class QuestionScreen extends Question
+class QuestionScreen extends AbstractScreen
 {
-    public const MAX_CHARACTERS_PER_PAGE = 160;
-
-    /**
-     * Reserved character to identify the user wants to retrieve more info.
-     */
-    public const MORE_INFO_TRIGGER = '?';
-
     /**
      * The question wrapped by this screen.
      *
@@ -24,27 +18,15 @@ class QuestionScreen extends Question
      */
     protected $question;
 
-    protected $currentPage;
-
-    protected $pages = [];
-
-    protected $optionsForCurrentPage = [];
-
-    protected $shouldRepeat = true;
+    protected $validationFailed = false;
 
     public function __construct(FieldQuestion $question)
     {
         $this->question = $question;
-        $this->currentPage = $this->buildInitialPage();
-        parent::__construct($this->getText());
+        parent::__construct();
     }
 
-    public function getText()
-    {
-        return $this->currentPage->getText();
-    }
-
-    public function buildInitialPage()
+    public function buildInitialPage(): Page
     {
         $options = $this->mapQuestionButtonsToScreenOptions($this->question->getButtons());
 
@@ -58,21 +40,12 @@ class QuestionScreen extends Question
         }, $buttons);
     }
 
-    public function getCurrentPageContent(): string
+    public function setAnswer(Answer $answer): void
     {
-        $pageContent = $this->pages[$this->currentPage];
-        $this->currentPage = $this->currentPage + 1;
+        if ($this->isDone()) {
+            return;
+        }
 
-        return $pageContent;
-    }
-
-    public function shouldRepeat(): bool
-    {
-        return $this->shouldRepeat;
-    }
-
-    public function setAnswer(Answer $answer)
-    {
         $text = trim($answer->getText());
 
         if ($this->currentPage->hasScreenOption($text)) {
@@ -81,10 +54,16 @@ class QuestionScreen extends Question
             return;
         }
 
+        $this->setAnswerForQuestion($answer);
+    }
+
+    public function setAnswerForQuestion(Answer $answer): void
+    {
         try {
             $this->question->setAnswer($answer);
-            $this->shouldRepeat = false;
+            $this->done = true;
         } catch (ValidationException $exception) {
+            $this->validationFailed = true;
             $errors = $exception->validator->errors()->all();
             $errorMessage = implode("\n", $errors);
 
@@ -92,43 +71,29 @@ class QuestionScreen extends Question
         }
     }
 
-    public function getValidatedAnswerValue()
+    public function validationFailed(): bool
     {
-        return $this->question->getValidatedAnswerValue();
+        return $this->validationFailed;
     }
 
-    public function handleScreenOption(string $option)
+    public function handleScreenOption(string $option): void
     {
-        if ($option == __('conversation.screen.next.value')) {
-            $this->transitionToNextPage();
-        }
-        if ($option == __('conversation.screen.previous.value')) {
-            $this->transitionToPreviousPage();
+        parent::handleScreenOption($option);
+
+        if (self::isEqualToOption($option, __('conversation.screen.skip.value'))) {
+            $this->dontRepeatAgain();
         }
 
-        //TODO: handle more info option:
-        // Transition to a new page with question instructions
-    }
-
-    public function transitionToNextPage(): void
-    {
-        if ($this->currentPage->hasNext()) {
-            $this->currentPage = $this->currentPage->getNext();
+        if (self::isEqualToOption($option, __('conversation.screen.info.value'))) {
+            $this->transitionToQuestionInfoPage();
         }
     }
 
-    public function transitionToPreviousPage(): void
+    public function transitionToQuestionInfoPage()
     {
-        if ($this->currentPage->hasPrevious()) {
-            $this->currentPage = $this->currentPage->getPrevious();
-        }
-    }
-
-    public function transitionToErrorPage(string $errorMessage)
-    {
-        //TODO: review the type hinting for page constructor
-        $errorPage = new Page($errorMessage, [], [], $this->currentPage);
-        $this->currentPage = $errorPage;
+        $info = $this->question->getMoreInfoContent();
+        $infoPage = new Page($info, [], [], $this->currentPage);
+        $this->setCurrentPage($infoPage);
     }
 
     public function getDefaultScreenOptions(): array

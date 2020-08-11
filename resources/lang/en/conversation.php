@@ -14,7 +14,7 @@ return [
   'sorryIDidntCatchThat' => "Sorry, I didn't catch that",
   'whatDoYouWantToDo' => 'What do you want to do?',
   'thankYou' => 'Thank you!',
-  'shouldSendResponses' => 'There are no more questions. Confirm you would like to send the responses by sending "YES". Cancel the survey by sending "NO" or "0000"',
+  'shouldSendResponses' => 'There are no more questions. Would you like to send your responses?',
   'yes' => 'YES',
   'no' => 'NO',
   'requestToFillIn' => 'Please, fill in the question.',
@@ -40,5 +40,10 @@ return [
       'value' => '?',
       'text' => 'Show more information',
     ],
+    'ok' => [
+      'value' => 'O',
+      'text' => 'Ok',
+    ],
   ],
+  'omissionIndicator' => '...',
 ];

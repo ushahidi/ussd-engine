@@ -2,16 +2,20 @@
 
 namespace App\Messages\Outgoing\Screen;
 
-use App\Messages\Outgoing\QuestionScreen;
-use App\Messages\Outgoing\Screen\Option;
 use Illuminate\Support\Str;
 
 class Page
 {
-    public const TEXT_ENDING = '...';
-
+    /**
+     * @var string
+     */
     public $text;
 
+    /**
+     * Registered options for this page's scope.
+     *
+     * @var array
+     */
     protected $pageOptions = [];
 
     /**
@@ -30,6 +34,7 @@ class Page
 
     public function __construct(?string $text, array $screenOptions = [], array $options = [], self $previous = null)
     {
+        $omissionIndicator = __('conversation.omissionIndicator');
         $builder = new PageContentBuilder();
 
         foreach ($screenOptions as $option) {
@@ -47,8 +52,8 @@ class Page
                 $text = null;
             } else {
                 $builder->appendNextPageOption();
-                $textSize = $builder->getAvailableCharactersCount() - strlen(self::TEXT_ENDING);
-                $builder->appendText(Str::limit($text, $textSize, self::TEXT_ENDING));
+                $textSize = $builder->getAvailableCharactersCount() - strlen($omissionIndicator);
+                $builder->appendText(Str::limit($text, $textSize, $omissionIndicator));
                 $text = Str::substr($text, $textSize);
             }
         }
@@ -60,8 +65,8 @@ class Page
                 $optionText = $option->getText();
                 if (! $builder->canAppendText($optionText, count($options) === 0)) {
                     $builder->appendNextPageOption();
-                    $optionTextSize = $builder->getAvailableCharactersCount() - strlen(self::TEXT_ENDING);
-                    $builder->appendText(Str::limit($optionText, $optionTextSize, self::TEXT_ENDING));
+                    $optionTextSize = $builder->getAvailableCharactersCount() - strlen($omissionIndicator);
+                    $builder->appendText(Str::limit($optionText, $optionTextSize, $omissionIndicator));
                     $newOptionText = Str::substr($optionText, $optionTextSize);
                     $option->text = $newOptionText;
                     array_unshift($options, $option);
@@ -82,10 +87,16 @@ class Page
 
     public function hasScreenOption(string $option): bool
     {
-        return in_array($option, $this->pageOptions);
+        foreach ($this->pageOptions as $registeredOption) {
+            if (AbstractScreen::isEqualToOption($option, $registeredOption)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    public function getText()
+    public function getText(): string
     {
         return $this->text;
     }
@@ -95,7 +106,7 @@ class Page
         return $this->next !== null;
     }
 
-    public function getNext()
+    public function getNext(): ?self
     {
         return $this->next;
     }
@@ -105,7 +116,7 @@ class Page
         return $this->previous !== null;
     }
 
-    public function getPrevious()
+    public function getPrevious(): ?self
     {
         return $this->previous;
     }

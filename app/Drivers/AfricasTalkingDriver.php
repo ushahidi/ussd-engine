@@ -2,8 +2,7 @@
 
 namespace App\Drivers;
 
-use App\Messages\Outgoing\EndingMessage;
-use BotMan\BotMan\Interfaces\WebAccess;
+use App\Messages\Outgoing\LastScreen;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
@@ -49,7 +48,7 @@ class AfricasTalkingDriver extends WebDriver
      */
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
-        if (! $message instanceof WebAccess && ! $message instanceof OutgoingMessage) {
+        if (! $message instanceof Question && ! $message instanceof OutgoingMessage) {
             $this->errorMessage = 'Unsupported message type.';
             $this->replyStatusCode = 500;
         }
@@ -60,32 +59,24 @@ class AfricasTalkingDriver extends WebDriver
     /**
      * Take all the outgoing messages and build a reply understandable by
      * Africa's Talking USSD gateway.
-     * @param $messages
-     * @return string
+     * @param array $messages
+     * @return string|null
      */
     protected function buildReply($messages)
     {
+        if (empty($messages)) {
+            return;
+        }
+
         $sessionIsCompleted = false;
         $replies = [];
 
         foreach ($messages as $message) {
-            if ($message instanceof WebAccess) {
-                $messageData = $message->toWebDriver();
-                if ($messageData['type'] === 'text') {
-                    $replies[] = $messageData['text'];
-                } elseif ($messageData['type'] === 'actions') {
-                    $replies[] = $messageData['text'];
-
-                    // Convert message actions to list of options
-                    foreach ($messageData['actions'] as $action) {
-                        $replies[] = "Send {$action['value']} for {$action['text']}.";
-                    }
-                }
-            } elseif ($message instanceof OutgoingMessage) {
+            if ($message instanceof OutgoingMessage || $message instanceof Question) {
                 $replies[] = $message->getText();
             }
 
-            if ($message instanceof EndingMessage) {
+            if ($message instanceof LastScreen && ! $message->getCurrentPage()->hasNext()) {
                 $sessionIsCompleted = true;
             }
         }
@@ -104,10 +95,14 @@ class AfricasTalkingDriver extends WebDriver
     {
         $response = $this->buildReply($this->replies);
 
-        // Reset replies
-        $this->replies = [];
+        if ($response) {
+            // Reset replies
+            $this->replies = [];
 
-        Response::create($response, $this->replyStatusCode, ['Content-Type' => 'text/plain'])->send();
+            Response::create($response, $this->replyStatusCode, ['Content-Type' => 'text/plain'])->send();
+        } else {
+            Response::create(null, Response::HTTP_CONFLICT)->send();
+        }
     }
 
     /**
