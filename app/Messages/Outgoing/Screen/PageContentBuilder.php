@@ -2,8 +2,10 @@
 
 namespace App\Messages\Outgoing\Screen;
 
+use Illuminate\Support\Str;
+
 /**
- * Encapsulates the part proccess of adding content to a Page dynamically.
+ * Encapsulates part of the proccess of adding content to a Page dynamically.
  */
 class PageContentBuilder
 {
@@ -30,6 +32,21 @@ class PageContentBuilder
     {
         $this->availableCharactersCount -= strlen($text);
         $this->textArray[] = $text;
+    }
+
+    /**
+     * Append as many text characters as spaces are left after appending
+     * the next option and the omission indicator.
+     */
+    public function appendExceedingText(string $text): string
+    {
+        $this->appendNextPageOption();
+        $omissionIndicator = __('conversation.omissionIndicator');
+        $textSize = $this->getAvailableCharactersCount() - strlen($omissionIndicator);
+        $this->appendText(Str::limit($text, $textSize, $omissionIndicator));
+        $text = Str::substr($text, $textSize);
+
+        return $text;
     }
 
     public function appendPageOption(Option $option): void
@@ -64,7 +81,7 @@ class PageContentBuilder
         return $this->availableCharactersCount;
     }
 
-    public function canAppendText(string $text, bool $isLastPiece = true): bool
+    public function hasEnoughSpaceForText(string $text, bool $isLastPiece = true): bool
     {
         $textLength = strlen($text);
 
