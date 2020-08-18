@@ -17,6 +17,7 @@
             margin: 0;
             padding: 0;
             background: radial-gradient(#57bfc7, #45a6b3);
+            white-space: pre-line;
         }
 
         .container {

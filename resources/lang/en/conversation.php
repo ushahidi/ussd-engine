@@ -14,7 +14,7 @@ return [
   'sorryIDidntCatchThat' => "Sorry, I didn't catch that",
   'whatDoYouWantToDo' => 'What do you want to do?',
   'thankYou' => 'Thank you!',
-  'shouldSendResponses' => 'There are no more questions. Confirm you would like to send the responses by sending "YES". Cancel the survey by sending "NO" or "0000"',
+  'shouldSendResponses' => 'There are no more questions. Would you like to send your responses?',
   'yes' => 'YES',
   'no' => 'NO',
   'requestToFillIn' => 'Please, fill in the question.',
@@ -23,4 +23,27 @@ return [
     'location' => 'Hint: Send latitude and longitude using a comma separated format. Example: 18.7527845,-71.3075768',
     'date' => 'Supported date format: YYYY-MM-DD',
   ],
+  'screen' => [
+    'next' => [
+      'value' => 'N',
+      'text' => 'Next',
+    ],
+    'previous' => [
+      'value' => 'P',
+      'text' => 'Previous',
+    ],
+    'skip' => [
+      'value' => 'S',
+      'text' => 'Skip',
+    ],
+    'info' => [
+      'value' => '?',
+      'text' => 'Show more information',
+    ],
+    'ok' => [
+      'value' => 'O',
+      'text' => 'Ok',
+    ],
+  ],
+  'omissionIndicator' => '...',
 ];

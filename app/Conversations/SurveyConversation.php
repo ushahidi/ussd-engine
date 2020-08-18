@@ -4,18 +4,19 @@ namespace App\Conversations;
 
 use App\Exceptions\EmptySurveysResultsException;
 use App\Exceptions\NoSurveyTasksException;
-use App\Messages\Outgoing\EndingMessage;
 use App\Messages\Outgoing\FieldQuestionFactory;
 use App\Messages\Outgoing\LanguageQuestion;
+use App\Messages\Outgoing\LastScreen;
+use App\Messages\Outgoing\MessageScreen;
+use App\Messages\Outgoing\QuestionScreen;
+use App\Messages\Outgoing\SelectQuestion;
 use App\Messages\Outgoing\SurveyQuestion;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
-use BotMan\BotMan\Messages\Outgoing\Actions\Button;
-use BotMan\BotMan\Messages\Outgoing\Question;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use PlatformSDK\Ushahidi;
 
 /**
@@ -28,11 +29,6 @@ use PlatformSDK\Ushahidi;
  */
 class SurveyConversation extends Conversation
 {
-    /**
-     * Reserved character to identify the user wants to retrieve more info.
-     */
-    public const MORE_INFO_TRIGGER = '?';
-
     /**
      * Ushahidi Platform SDK instance.
      *
@@ -88,16 +84,6 @@ class SurveyConversation extends Conversation
      * @var string
      */
     protected $selectedLanguage;
-
-    /**
-     * Indicates if the conversation is in a state where the user
-     * can ask for more information.
-     *
-     * It gets toggled as the conversation transition between questions.
-     *
-     * @var bool
-     */
-    protected $userCanAskForInfo = true;
 
     public function __construct()
     {
@@ -215,26 +201,44 @@ class SurveyConversation extends Conversation
                                             ->values()
                                             ->all();
 
-        $question = new LanguageQuestion($availableLanguagesList);
+        $questionScreen = new QuestionScreen(new LanguageQuestion($availableLanguagesList));
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, $this->getInteractionLanguageHandler($questionScreen));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction with the
+     * interaction language question specifically.
+     *
+     * @param QuestionScreen $questionScreen
+     * @return Closure
+     */
+    public function getInteractionLanguageHandler(QuestionScreen $questionScreen): Closure
+    {
+        return  function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getValidatedAnswerValue();
-                App::setLocale($this->selectedLanguage);
-                $this->askSurvey();
-            } catch (ValidationException $exception) {
-                $errors = $exception->validator->errors()->all();
-                foreach ($errors as $error) {
-                    $this->say($error);
+                $questionScreen->setAnswer($answer);
+
+                if (! $questionScreen->isDone()) {
+                    if ($questionScreen->validationFailed()) {
+                        $questionScreen->dontRepeatAgain();
+                    }
+
+                    return $this->ask($questionScreen, $this->getInteractionLanguageHandler($questionScreen));
                 }
 
-                return $this->askCancelOrGoToListOfSurveys();
+                if ($questionScreen->validationFailed()) {
+                    return $this->askCancelOrGoToListOfSurveys();
+                }
+
+                $this->selectedLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->askSurvey();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking interaction language:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
-        });
+        };
     }
 
     /**
@@ -245,29 +249,40 @@ class SurveyConversation extends Conversation
     protected function askSurvey()
     {
         $question = new SurveyQuestion($this->surveys->all());
+        $questionScreen = new QuestionScreen($question);
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, $this->getSurveyHandler($questionScreen));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction with the
+     * survey question specifically.
+     *
+     * @param QuestionScreen $questionScreen
+     * @return Closure
+     */
+    protected function getSurveyHandler(QuestionScreen $questionScreen): Closure
+    {
+        return function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $selectedSurvey = $question->getValidatedAnswerValue();
+                $questionScreen->setAnswer($answer);
+
+                if (! $questionScreen->isDone()) {
+                    return $this->ask($questionScreen, $this->getSurveyHandler($questionScreen));
+                }
+
+                $selectedSurvey = $questionScreen->getQuestion()->getValidatedAnswerValue();
                 $this->setSurvey($this->getSurvey($selectedSurvey));
                 if ($this->isSurveyAvailableInCurrentLocale()) {
-                    $this->askTasks();
+                    $this->showSurveyInformation();
                 } else {
                     $this->askSurveyLanguage();
                 }
-            } catch (ValidationException $exception) {
-                $errors = $exception->validator->errors()->all();
-                foreach ($errors as $error) {
-                    $this->say($error);
-                }
-
-                return $this->repeat();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking survey:'.$exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
-        });
+        };
     }
 
     /**
@@ -278,25 +293,83 @@ class SurveyConversation extends Conversation
     protected function askSurveyLanguage()
     {
         $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
-        $question = new LanguageQuestion($surveyLanguages);
+        $questionScreen = new QuestionScreen(new LanguageQuestion($surveyLanguages));
 
-        $this->ask($question, function (Answer $answer) use ($question) {
+        $this->ask($questionScreen, $this->getSurveyLanguageHandler($questionScreen));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction with the
+     * survey language question specifically.
+     *
+     * @param QuestionScreen $questionScreen
+     * @return Closure
+     */
+    protected function getSurveyLanguageHandler(QuestionScreen $questionScreen): Closure
+    {
+        return function (Answer $answer) use ($questionScreen) {
             try {
-                $question->setAnswer($answer);
-                $this->selectedLanguage = $question->getValidatedAnswerValue();
-                App::setLocale($this->selectedLanguage);
-                $this->askTasks();
-            } catch (ValidationException $exception) {
-                $errors = $exception->validator->errors()->all();
-                foreach ($errors as $error) {
-                    $this->say($error);
+                $questionScreen->setAnswer($answer);
+
+                if (! $questionScreen->isDone()) {
+                    if ($questionScreen->validationFailed()) {
+                        $questionScreen->dontRepeatAgain();
+                    }
+
+                    return $this->ask($questionScreen, $this->getSurveyLanguageHandler($questionScreen));
                 }
 
-                return $this->askCancelOrGoToListOfSurveys();
+                if ($questionScreen->validationFailed()) {
+                    return $this->askCancelOrGoToListOfSurveys();
+                }
+
+                $this->selectedLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
+                App::setLocale($this->selectedLanguage);
+                $this->showSurveyInformation();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
             }
-        });
+        };
+    }
+
+    /**
+     * Sends a screen with the survey information to the user.
+     *
+     * @return void
+     */
+    public function showSurveyInformation()
+    {
+        $replace = [
+            'name' => $this->survey['name'],
+            'description' => $this->survey['description'],
+        ];
+
+        $messageScreen = new MessageScreen(__('conversation.surveySelected', $replace));
+
+        $this->ask($messageScreen, $this->getShowSurveyInformationHandler($messageScreen));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction while reading the survey information.
+     *
+     * @param MessageScreen $messageScreen
+     * @return Closure
+     */
+    public function getShowSurveyInformationHandler(MessageScreen $messageScreen): Closure
+    {
+        return function (Answer $answer) use ($messageScreen) {
+            try {
+                $messageScreen->setAnswer($answer);
+
+                if (! $messageScreen->isDone()) {
+                    return $this->ask($messageScreen, $this->getShowSurveyInformationHandler($messageScreen));
+                }
+
+                $this->askTasks();
+            } catch (\Throwable $exception) {
+                $this->sendEndingMessage(__('conversation.oops'));
+            }
+        };
     }
 
     /**
@@ -306,11 +379,6 @@ class SurveyConversation extends Conversation
      */
     protected function askTasks()
     {
-        $replace = [
-            'name' => $this->survey['name'],
-            'description' => $this->survey['description'],
-        ];
-        $this->say(__('conversation.surveySelected', $replace));
         if (isset($this->survey['tasks']) && is_array($this->survey['tasks']) && count($this->survey['tasks'])) {
             $this->tasks = Collection::make([$this->survey['tasks'][0]])->keyBy('id');
             $this->askNextTask();
@@ -351,20 +419,26 @@ class SurveyConversation extends Conversation
     private function askForSendConfirmation()
     {
         // The callback should be a method available in this class
-        $options = [
-            [
-                'display' => __('conversation.yes'),
-                'value' =>  __('conversation.yes'),
-                'callback' => 'sendSurveyResponses',
-            ],
-            [
-                'display' => __('conversation.no'),
-                'value' => __('conversation.no'),
-                'callback' => 'cancelConversation',
+        $field = [
+            'label' => __('conversation.shouldSendResponses'),
+            'required' => true,
+            'options' => [
+                [
+                    'display' => __('conversation.yes'),
+                    'value' => 'sendSurveyResponses',
+                ],
+                [
+                    'display' => __('conversation.no'),
+                    'value' => 'cancelConversation',
+                ],
             ],
         ];
 
-        return $this->askDecision(__('conversation.shouldSendResponses'), $options);
+        $question = new SelectQuestion($field, 'value', 'display');
+
+        $questionScreen = new QuestionScreen($question);
+
+        $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
     }
 
     /**
@@ -403,7 +477,6 @@ class SurveyConversation extends Conversation
     private function askNextField()
     {
         if ($this->fields->count()) {
-            $this->userCanAskForInfo = true;
             $this->askField($this->fields->first());
         } else {
             $this->buildTaskResponse();
@@ -438,46 +511,37 @@ class SurveyConversation extends Conversation
     private function askField(array $field)
     {
         $question = FieldQuestionFactory::create($field);
-        $this->ask($question, function (Answer $answer) use ($question, $field) {
-            if (
-                $question->hasMoreInfo() &&
-                trim($answer->getText()) === self::MORE_INFO_TRIGGER &&
-                $this->userCanAskForInfo
-            ) {
-                $this->userCanAskForInfo = false;
-                $this->repeat();
-                $this->say($question->getMoreInfoContent());
-                $this->say(__('conversation.requestToFillIn'));
+        $questionScreen = new QuestionScreen($question);
 
-                return;
-            }
+        $this->ask($questionScreen, $this->getFieldHandler($questionScreen, $field));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction while answwering a field.
+     *
+     * @param QuestionScreen $questionScreen
+     * @param array $field
+     * @return Closure
+     */
+    public function getFieldHandler(QuestionScreen $questionScreen, array $field): Closure
+    {
+        return  function (Answer $answer) use ($questionScreen, $field) {
             try {
-                $question->setAnswer($answer);
-                $this->answers[] = $question->toPayload();
-            } catch (ValidationException $exception) {
-                $this->userCanAskForInfo = true;
+                $questionScreen->setAnswer($answer);
 
-                $errors = $exception->validator->errors()->all();
-                foreach ($errors as $error) {
-                    $this->say($error);
+                if (! $questionScreen->isDone()) {
+                    return $this->ask($questionScreen, $this->getFieldHandler($questionScreen, $field));
                 }
 
-                if ($question->hasHints()) {
-                    $this->say($question->getHints());
-                }
-
-                return $this->repeat();
+                $this->answers[] = $questionScreen->getQuestion()->toPayload();
+            } catch (\Throwable $exception) {
+                Log::error('Error while asking field:'.$exception->getMessage(), ['field' => $field]);
+                $this->sendEndingMessage(__('conversation.oops'));
             }
 
             $this->fields->forget($field['id']);
             $this->askNextField();
-        });
-        if ($question->hasHints() && $question->shouldShowHintsByDefault()) {
-            $this->say($question->getHints());
-        }
-        if ($question->hasMoreInfo()) {
-            $this->say(__('conversation.showMoreInfo'));
-        }
+        };
     }
 
     /**
@@ -489,47 +553,52 @@ class SurveyConversation extends Conversation
     protected function askCancelOrGoToListOfSurveys()
     {
         // The callback should be a method available in this class
-        $options = [
-            [
-                'display' => __('conversation.cancel'),
-                'value' =>  __('conversation.cancelValue'),
-                'callback' => 'cancelConversation',
-            ],
-            [
-                'display' => __('conversation.goToListOfSurveys'),
-                'value' => __('conversation.goToListOfSurveysValue'),
-                'callback' => 'askSurvey',
+        $field = [
+            'label' => __('conversation.whatDoYouWantToDo'),
+            'required' => true,
+            'options' => [
+                [
+                    'display' => __('conversation.cancel'),
+                    'value' => 'cancelConversation',
+                ],
+                [
+                    'display' => __('conversation.goToListOfSurveys'),
+                    'value' => 'askSurvey',
+                ],
             ],
         ];
 
-        return $this->askDecision(__('conversation.whatDoYouWantToDo'), $options);
+        $question = new SelectQuestion($field, 'value', 'display');
+
+        $questionScreen = new QuestionScreen($question);
+
+        $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
     }
 
     /**
-     * Create and aks a question with desicion options, if one of the options is choosen
-     * the callback for the option gets called.
+     * Returns a callback for the questions that has callbacks as option values.
      *
-     * @param string $text
-     * @param array $options
-     * @return void
+     * @param QuestionScreen $questionScreen
+     * @return Closure
      */
-    protected function askDecision(string $text = null, array $options)
+    protected function getCallbackHandler(QuestionScreen $questionScreen): Closure
     {
-        $question = Question::create($text);
-        $question->addButtons(array_map(function ($option) {
-            return Button::create($option['display'])->value($option['value']);
-        }, $options));
+        return function (Answer $answer) use ($questionScreen) {
+            try {
+                $questionScreen->setAnswer($answer);
 
-        $this->ask($question, function (Answer $answer) use ($options) {
-            $selectedOption = Collection::make($options)->firstWhere('value', trim($answer->getText()));
-            if (! $selectedOption) {
-                $this->say(__('conversation.sorryIDidntCatchThat'));
+                if (! $questionScreen->isDone()) {
+                    return $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
+                }
 
-                return $this->repeat();
+                $callback = $questionScreen->getQuestion()->getValidatedAnswerValue();
+
+                return call_user_func([$this, $callback]);
+            } catch (\Throwable $exception) {
+                Log::error('Error while asking interaction language:'.$exception->getMessage());
+                $this->sendEndingMessage(__('conversation.oops'));
             }
-
-            return call_user_func([$this, $selectedOption['callback']]);
-        });
+        };
     }
 
     /**
@@ -550,7 +619,29 @@ class SurveyConversation extends Conversation
      */
     public function sendEndingMessage(string $message)
     {
-        $this->say(EndingMessage::create($message));
+        $lastScreen = new LastScreen($message);
+        $this->ask($lastScreen, $this->getEndingMessageHandler($lastScreen));
+    }
+
+    /**
+     * Returns a callback able to handle the user interaction wihle reading the ending message.
+     *
+     * @param LastScreen $screen
+     * @return Closure
+     */
+    public function getEndingMessageHandler(LastScreen $screen): Closure
+    {
+        return function (Answer $answer) use ($screen) {
+            try {
+                $screen->setAnswer($answer);
+
+                if (! $screen->isDone()) {
+                    return $this->ask($screen, $this->getEndingMessageHandler($screen));
+                }
+            } catch (\Throwable $exception) {
+                Log::error('Error while sending ending message:'.$exception->getMessage());
+            }
+        };
     }
 
     /**
@@ -578,7 +669,7 @@ class SurveyConversation extends Conversation
         try {
             $this->sdk->createPost($post);
         } catch (\Throwable $ex) {
-            Log::error("Couldn't save post: ".$ex->getMessage());
+            Log::error("Couldn't save post: ".$ex->getMessage(), ['post' => $post]);
             throw $ex;
         }
     }
