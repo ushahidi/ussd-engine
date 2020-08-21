@@ -400,7 +400,7 @@ class SurveyConversation extends Conversation
             $task = $this->tasks->first();
 
             if (isset($task['fields']) && is_array($task['fields']) && count($task['fields'])) {
-                $this->fields = Collection::make($task['fields'])->keyBy('id');
+                $this->fields = Collection::make($task['fields']);
                 $this->askFields();
 
                 return;
@@ -477,7 +477,7 @@ class SurveyConversation extends Conversation
     private function askNextField()
     {
         if ($this->fields->count()) {
-            $this->askField($this->fields->first());
+            $this->askField($this->fields->shift());
         } else {
             $this->buildTaskResponse();
             $this->tasks->forget($this->tasks->first()['id']);
@@ -513,7 +513,7 @@ class SurveyConversation extends Conversation
         $question = FieldQuestionFactory::create($field);
         $questionScreen = new QuestionScreen($question);
 
-        $this->ask($questionScreen, $this->getFieldHandler($questionScreen, $field));
+        $this->ask($questionScreen, $this->getFieldHandler($questionScreen));
     }
 
     /**
@@ -523,24 +523,32 @@ class SurveyConversation extends Conversation
      * @param array $field
      * @return Closure
      */
-    public function getFieldHandler(QuestionScreen $questionScreen, array $field): Closure
+    public function getFieldHandler(QuestionScreen $questionScreen): Closure
     {
-        return  function (Answer $answer) use ($questionScreen, $field) {
+        return  function (Answer $answer) use ($questionScreen) {
             try {
                 $questionScreen->setAnswer($answer);
 
                 if (! $questionScreen->isDone()) {
-                    return $this->ask($questionScreen, $this->getFieldHandler($questionScreen, $field));
+                    return $this->ask($questionScreen, $this->getFieldHandler($questionScreen));
                 }
 
-                $this->answers[] = $questionScreen->getQuestion()->toPayload();
+                $question = $questionScreen->getQuestion();
+
+                if ($question->shouldBeSentToPlaform()) {
+                    $this->answers[] = $questionScreen->getQuestion()->toPayload();
+                }
+
+                if ($question->createsNewQuestion()) {
+                    $nextQuestionScreen = new QuestionScreen($question->getNextQuestion());
+                    $this->ask($nextQuestionScreen, $this->getFieldHandler($nextQuestionScreen));
+                } else {
+                    $this->askNextField();
+                }
             } catch (\Throwable $exception) {
-                Log::error('Error while asking field:'.$exception->getMessage(), ['field' => $field]);
+                Log::error('Error while asking field:'.$exception->getMessage(), ['question-screen' => $questionScreen]);
                 $this->sendEndingMessage(__('conversation.oops'));
             }
-
-            $this->fields->forget($field['id']);
-            $this->askNextField();
         };
     }
 

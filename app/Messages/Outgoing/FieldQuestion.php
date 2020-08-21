@@ -4,6 +4,7 @@ namespace App\Messages\Outgoing;
 
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
@@ -131,6 +132,21 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      * @return array
      */
     abstract public function getRules(): array;
+
+    public function shouldBeSentToPlaform(): bool
+    {
+        return true;
+    }
+
+    public function createsNewQuestion(): bool
+    {
+        return false;
+    }
+
+    public function getNextQuestion(): self
+    {
+        throw new Exception('No next question available for this question.');
+    }
 
     /**
      * Returns the field body to attach to the survey report payload.
