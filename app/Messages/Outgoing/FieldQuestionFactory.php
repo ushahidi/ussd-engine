@@ -10,13 +10,13 @@ use App\Messages\Outgoing\Fields\Decimal;
 use App\Messages\Outgoing\Fields\Description;
 use App\Messages\Outgoing\Fields\Image;
 use App\Messages\Outgoing\Fields\Integer;
-use App\Messages\Outgoing\Fields\Location;
 use App\Messages\Outgoing\Fields\LongText;
 use App\Messages\Outgoing\Fields\Markdown;
 use App\Messages\Outgoing\Fields\RadioButtons;
 use App\Messages\Outgoing\Fields\ShortText;
 use App\Messages\Outgoing\Fields\Title;
 use App\Messages\Outgoing\Fields\Video;
+use App\Messages\Outgoing\GeoLocation;
 
 class FieldQuestionFactory
 {
@@ -42,7 +42,7 @@ class FieldQuestionFactory
                 return new Decimal($field);
                 break;
             case $field['input'] == 'location' && $field['type'] == 'point':
-                return new Location($field);
+                return new GeoLocation($field);
                 break;
             case $field['input'] == 'date' && $field['type'] == 'datetime':
                 return new Date($field);

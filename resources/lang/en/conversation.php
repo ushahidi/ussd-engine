@@ -20,8 +20,9 @@ return [
   'requestToFillIn' => 'Please, fill in the question.',
   'hints' => [
     'checkboxes' => 'Hint: Select all that apply using a comma separated format. Example: 1,2',
-    'location' => 'Hint: Send latitude and longitude using a comma separated format. Example: 18.7527845,-71.3075768',
+    'location' => 'Hint: Add as much detail as possible about the address to improve the results. Example: Upper Hill, Nairobi, Kenya',
     'date' => 'Supported date format: YYYY-MM-DD',
+    'locationGroup' => 'Which country does this address belong to?',
   ],
   'screen' => [
     'next' => [
@@ -46,4 +47,12 @@ return [
     ],
   ],
   'omissionIndicator' => '...',
+  'geolocation' => [
+    'noResults' => 'We could not match that address.',
+    'chooseAddress' => 'Select a match address',
+    'searchAgain' => 'Search again',
+    'groupTypes' => [
+      'country' => 'country',
+    ],
+  ],
 ];
