@@ -278,10 +278,10 @@ class SurveyConversation extends Conversation
 
                 $selectedSurvey = $questionScreen->getQuestion()->getValidatedAnswerValue();
                 $this->setSurvey($this->getSurvey($selectedSurvey));
-                if ($this->isSurveyAvailableInCurrentLocale()) {
-                    $this->showSurveyInformation();
-                } else {
+                if ($this->shouldAskSurveyLanguage()) {
                     $this->askSurveyLanguage();
+                } else {
+                    $this->showSurveyInformation();
                 }
             } catch (\Throwable $exception) {
                 Log::error('Error while asking survey:'.$exception->getMessage());
@@ -297,7 +297,7 @@ class SurveyConversation extends Conversation
      */
     protected function askSurveyLanguage()
     {
-        $surveyLanguages = array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]);
+        $surveyLanguages = array_filter(array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]));
         $questionScreen = new QuestionScreen(new LanguageQuestion($surveyLanguages));
 
         $this->ask($questionScreen, $this->getSurveyLanguageHandler($questionScreen));
@@ -684,22 +684,33 @@ class SurveyConversation extends Conversation
      *
      * @return bool
      */
-    public function isSurveyAvailableInCurrentLocale(): bool
+    public function shouldAskSurveyLanguage(): bool
     {
+        // don't ask survey lang if survey doesn't have enabled languages
         if (! isset($this->survey['enabled_languages'])) {
+            return false;
+        }
+
+        $hasDefaultLanguage = isset($this->survey['enabled_languages']['default']) && ! empty($this->survey['enabled_languages']['default']);
+        $hasAvailableLanguages = isset($this->survey['enabled_languages']['available']) && ! empty(array_filter($this->survey['enabled_languages']['available']));
+
+        // if the survey doesn't have a default language or doesn't have available languages neither, don't ask for survey language
+        if (! ($hasDefaultLanguage || $hasAvailableLanguages)) {
             return false;
         }
 
         $locale = App::getLocale();
 
-        if (isset($this->survey['enabled_languages']['default']) && $this->survey['enabled_languages']['default'] == $locale) {
-            return true;
+        // if the survey default language is the same as the current locale, don't ask for survey language
+        if ($hasDefaultLanguage && $this->survey['enabled_languages']['default'] == $locale) {
+            return false;
         }
 
-        if (isset($this->survey['enabled_languages']['available']) && in_array($locale, $this->survey['enabled_languages']['available'])) {
-            return true;
+        // if the current locale is in the list of available languagues for the survey, don't ask for survey language
+        if ($hasAvailableLanguages && in_array($locale, $this->survey['enabled_languages']['available'])) {
+            return false;
         }
 
-        return false;
+        return true;
     }
 }
