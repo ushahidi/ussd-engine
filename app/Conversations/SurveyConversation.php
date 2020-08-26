@@ -198,8 +198,13 @@ class SurveyConversation extends Conversation
                                             ->pluck('enabled_languages')
                                             ->flatten()
                                             ->unique()
+                                            ->filter()
                                             ->values()
                                             ->all();
+
+        if (empty($availableLanguagesList)) {
+            return $this->askSurvey();
+        }
 
         $questionScreen = new QuestionScreen(new LanguageQuestion($availableLanguagesList));
 
