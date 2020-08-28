@@ -14,6 +14,7 @@ use App\Messages\Outgoing\Fields\Location;
 use App\Messages\Outgoing\Fields\LongText;
 use App\Messages\Outgoing\Fields\Markdown;
 use App\Messages\Outgoing\Fields\RadioButtons;
+use App\Messages\Outgoing\Fields\Select;
 use App\Messages\Outgoing\Fields\ShortText;
 use App\Messages\Outgoing\Fields\Title;
 use App\Messages\Outgoing\Fields\Video;
@@ -55,6 +56,9 @@ class FieldQuestionFactory
                 break;
             case $field['input'] == 'checkbox' && $field['type'] == 'varchar':
                 return new Checkboxes($field);
+                break;
+            case $field['input'] == 'select' && $field['type'] == 'varchar':
+                return new Select($field);
                 break;
             case $field['input'] == 'markdown' && $field['type'] == 'markdown':
                 return new Markdown($field);
