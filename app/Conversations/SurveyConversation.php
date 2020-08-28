@@ -17,7 +17,7 @@ use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
-use PlatformSDK\Ushahidi;
+use Ushahidi\Platform\Client;
 
 /**
  * This Conversation defines all interaction with the user when filling a form.
@@ -32,7 +32,7 @@ class SurveyConversation extends Conversation
     /**
      * Ushahidi Platform SDK instance.
      *
-     * @var \PlatformSDK\Ushahidi
+     * @var Ushahidi\Platform\Client
      */
     protected $sdk;
 
@@ -87,7 +87,7 @@ class SurveyConversation extends Conversation
 
     public function __construct()
     {
-        $this->sdk = resolve(Ushahidi::class);
+        $this->sdk = resolve(Client::class);
     }
 
     /**
@@ -126,7 +126,7 @@ class SurveyConversation extends Conversation
      */
     public function __wakeup()
     {
-        $this->sdk = resolve(Ushahidi::class);
+        $this->sdk = resolve(Client::class);
         App::setLocale($this->selectedLanguage);
 
         return parent::__sleep();

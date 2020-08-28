@@ -3,13 +3,13 @@
 namespace App\Messages\Outgoing;
 
 use App\Messages\Outgoing\FieldQuestion;
-use App\Messages\Outgoing\SelectQuestion;
 use App\Messages\Outgoing\TextQuestion;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use Exception;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use PlatformSDK\Ushahidi;
+use Ushahidi\Platform\Client;
 
 class GeoLocation extends TextQuestion
 {
@@ -70,8 +70,8 @@ class GeoLocation extends TextQuestion
     public function queryLocation(string $query): array
     {
         try {
-            $sdk = resolve(Ushahidi::class);
-            $response = $sdk->queryLocation($query);
+            $sdk = resolve(Client::class);
+            $response = $sdk->queryLocation($query, App::getLocale());
 
             if (isset($response['body'])) {
                 return $response['body'];
