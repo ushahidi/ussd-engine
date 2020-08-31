@@ -42,7 +42,6 @@ class Page
      */
     public function __construct(?string $text, array $screenOptions = [], array $options = [], self $previous = null)
     {
-        $omissionIndicator = __('conversation.omissionIndicator');
         $builder = new PageContentBuilder();
 
         // The default screen options have priorities over everything else
@@ -57,32 +56,29 @@ class Page
         }
 
         if ($text) {
-            if ($builder->hasEnoughSpaceForText($text)) {
-                $builder->appendText($text);
-                $text = null;
-            } else {
-                $text = $builder->appendExceedingText($text);
-            }
+            $appendedCharacters = $builder->appendText($text, empty($options));
+            $text = $appendedCharacters < mb_strlen($text) ? Str::substr($text, $appendedCharacters) : null;
         }
 
         /*
          * Only if the page is not already full we'll try to append the options
          */
-        if (! $builder->hasNextPageOption() && count($options) > 0) {
-            $availableCharacters = $builder->getAvailableCharactersCount();
-            while (! $builder->hasNextPageOption() && $availableCharacters > 0 && count($options) > 0) {
+        if (is_null($text) && count($options) > 0) {
+            while (count($options) > 0) {
                 $option = array_shift($options);
-                $optionText = $option->getText();
-                $isTheLastPiecePendingForAttachment = count($options) === 0;
+                $value = "\n[{$option->value}] ";
+                $text = $option->text;
+                $optionText = $value.$text;
+                $charactersToAppend = mb_strlen($optionText);
 
-                if ($builder->hasEnoughSpaceForText($optionText, $isTheLastPiecePendingForAttachment)) {
-                    $builder->appendText($optionText);
-                } else {
-                    $newOptionText = $builder->appendExceedingText($optionText);
+                $appendedCharacters = $builder->appendText($optionText, empty($options));
+                if ($appendedCharacters < $charactersToAppend) {
+                    $appendedCharacters -= mb_strlen($value);
+                    $newOptionText = Str::substr($text, $appendedCharacters);
                     $option->text = $newOptionText;
                     array_unshift($options, $option);
+                    break;
                 }
-                $availableCharacters = $builder->getAvailableCharactersCount();
             }
         }
 

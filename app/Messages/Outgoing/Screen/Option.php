@@ -24,4 +24,14 @@ class Option
     {
         return "\n[{$this->value}] {$this->text}";
     }
+
+    public function toString(): string
+    {
+        return "\n[{$this->value}] {$this->text}";
+    }
+
+    public function setText(string $text): void
+    {
+        $this->text = $text;
+    }
 }

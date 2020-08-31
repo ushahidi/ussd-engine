@@ -10,4 +10,24 @@ class Select extends SelectQuestion
     {
         return 'select';
     }
+
+    public function shouldShowHintsByDefault(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Used to know if this question has hints to show.
+     *
+     * @return bool
+     */
+    public function hasHints(): bool
+    {
+        return false;
+    }
+
+    public function getHints(): string
+    {
+        return __('conversation.hints.select');
+    }
 }

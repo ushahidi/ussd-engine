@@ -9,7 +9,11 @@ use Illuminate\Support\Str;
  */
 class PageContentBuilder
 {
+    const WHITE_SPACE = ' ';
+
     protected $textArray = [];
+
+    protected $text = '';
 
     protected $pageOptions = [];
 
@@ -28,10 +32,58 @@ class PageContentBuilder
         $this->availableCharactersCount = (int) config('ussd.max_characters_per_page');
     }
 
-    public function appendText(string $text): void
+    public function appendText(string $text, bool $isLastPiece = false): int
     {
-        $this->availableCharactersCount -= strlen($text);
-        $this->textArray[] = $text;
+        $textLength = mb_strlen($text);
+        $omissionIndicator = __('conversation.omissionIndicator');
+        $omissionIndicatorLength = mb_strlen($omissionIndicator);
+        $reservedCharactersCount = mb_strlen(self::getNextOption()->toString()) + $omissionIndicatorLength;
+        $availableCharactersCount = $this->availableCharactersCount;
+        if ($textLength <= ($this->availableCharactersCount - $reservedCharactersCount)) {
+            $this->text .= $text;
+            $this->availableCharactersCount -= $textLength;
+
+            return $textLength;
+        }
+
+        // $this->appendNextPageOption();
+
+        $tok = strtok($text, self::WHITE_SPACE);
+        $appendedText = '';
+        /*
+         * while tok is not false
+         *
+         *      if there is space for tok
+         *          if wont miss space // is last piece and fit or is not last piece but remaining text will fit anyways
+         *              append tok
+         *          else if tok
+         *
+         *
+         *      else
+         *          append ommision indicator
+         *          break
+         *      if is last word
+         *          if there's space for tok
+         *              append tok
+         *          else
+         *              append omission indicator
+         *      else
+         */
+        while ($tok !== false && mb_strlen($appendedText) < $this->availableCharactersCount) {
+            $doesFit = ($this->availableCharactersCount - mb_strlen($tok)) > $omissionIndicatorLength;
+            if ($doesFit) {
+                // dump('Does fit:', $tok, $availableCharactersCount, mb_strlen($appendedText));
+                $appendedText .= $tok.' ';
+            } else {
+                $appendedText = trim($appendedText).$omissionIndicator;
+                break;
+            }
+            $tok = strtok(self::WHITE_SPACE);
+        }
+        $this->text .= $appendedText;
+        $this->availableCharactersCount -= mb_strlen($appendedText);
+
+        return $textLength - mb_strlen($appendedText);
     }
 
     /**
@@ -43,7 +95,7 @@ class PageContentBuilder
         $this->appendNextPageOption();
         $omissionIndicator = __('conversation.omissionIndicator');
         $textSize = $this->getAvailableCharactersCount() - strlen($omissionIndicator);
-        $this->appendText(Str::limit($text, $textSize, $omissionIndicator));
+        // $this->appendText(Str::limit($text, $textSize, $omissionIndicator));
         $text = Str::substr($text, $textSize);
 
         return $text;
@@ -51,8 +103,8 @@ class PageContentBuilder
 
     public function appendPageOption(Option $option): void
     {
-        $text = $option->getText();
-        $this->availableCharactersCount -= strlen($text);
+        $text = $option->toString();
+        // $this->availableCharactersCount -= strlen($text);
 
         $this->pageOptions[] = $text;
         $this->pageOptionsValues[] = $option->value;
@@ -83,20 +135,20 @@ class PageContentBuilder
 
     public function hasEnoughSpaceForText(string $text, bool $isLastPiece = true): bool
     {
-        $textLength = strlen($text);
+        $textLength = mb_strlen($text);
 
         if ($isLastPiece) {
             return $textLength <= $this->availableCharactersCount;
         }
 
-        $reservedCharactersCount = strlen(self::getNextOption()->getText());
+        $reservedCharactersCount = mb_strlen(self::getNextOption()->toString());
 
         return $textLength <= $this->availableCharactersCount - $reservedCharactersCount;
     }
 
     public function getPageContent(): string
     {
-        return implode($this->textArray).implode($this->pageOptions);
+        return $this->text.implode($this->pageOptions);
     }
 
     public function getPageOptionsValues(): array
