@@ -20,10 +20,10 @@ class QuestionScreen extends AbstractScreen
 
     protected $validationFailed = false;
 
-    public function __construct(FieldQuestion $question)
+    public function __construct(FieldQuestion $question, bool $includeCancelOption = true)
     {
         $this->question = $question;
-        parent::__construct();
+        parent::__construct($includeCancelOption);
     }
 
     public function buildInitialPage(): Page
@@ -98,7 +98,7 @@ class QuestionScreen extends AbstractScreen
 
     public function getDefaultScreenOptions(): array
     {
-        $options = [];
+        $options = parent::getDefaultScreenOptions();
         if (! $this->question->isRequired()) {
             $options[] = new Option(__('conversation.screen.skip.value'), __('conversation.screen.skip.text'));
         }

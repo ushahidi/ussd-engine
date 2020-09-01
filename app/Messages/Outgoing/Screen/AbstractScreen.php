@@ -20,8 +20,13 @@ abstract class AbstractScreen extends Question
      */
     protected $done = false;
 
-    public function __construct()
+    protected $includeCancelOption;
+
+    protected $canceled = false;
+
+    public function __construct(bool $includeCancelOption = true)
     {
+        $this->includeCancelOption = $includeCancelOption;
         $this->currentPage = $this->buildInitialPage();
         parent::__construct($this->getText());
     }
@@ -40,9 +45,32 @@ abstract class AbstractScreen extends Question
         return $this->done;
     }
 
+    public function wasCanceled(): bool
+    {
+        return $this->canceled;
+    }
+
+    private function cancel()
+    {
+        $this->canceled = true;
+        $this->dontRepeatAgain();
+    }
+
     public function dontRepeatAgain(): void
     {
         $this->done = true;
+    }
+
+    public function getDefaultScreenOptions(): array
+    {
+        $options = [];
+
+        // users should be able to cancel anytime
+        if ($this->includeCancelOption) {
+            $options[] = new Option(__('conversation.screen.cancel.value'), __('conversation.screen.cancel.text'));
+        }
+
+        return $options;
     }
 
     public function handleScreenOption(string $option): void
@@ -52,6 +80,9 @@ abstract class AbstractScreen extends Question
         }
         if (self::isEqualToOption($option, __('conversation.screen.previous.value'))) {
             $this->transitionToPreviousPage();
+        }
+        if (self::isEqualToOption($option, __('conversation.screen.cancel.value'))) {
+            $this->cancel();
         }
     }
 
