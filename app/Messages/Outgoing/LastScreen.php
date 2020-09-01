@@ -8,4 +8,8 @@ namespace App\Messages\Outgoing;
  */
 class LastScreen extends MessageScreen
 {
+    public function __construct(string $text)
+    {
+        parent::__construct($text, false);
+    }
 }

@@ -16,10 +16,10 @@ class MessageScreen extends AbstractScreen
      */
     protected $text;
 
-    public function __construct(string $text)
+    public function __construct(string $text, bool $includeCancelOption = true)
     {
         $this->text = $text;
-        parent::__construct();
+        parent::__construct($includeCancelOption);
     }
 
     public function buildInitialPage(): Page
@@ -53,7 +53,7 @@ class MessageScreen extends AbstractScreen
 
     public function getDefaultScreenOptions(): array
     {
-        $options = [];
+        $options = parent::getDefaultScreenOptions();
 
         $options[] = new Option(__('conversation.screen.ok.value'), __('conversation.screen.ok.text'));
 

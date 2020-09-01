@@ -232,6 +232,10 @@ class SurveyConversation extends Conversation
                     return $this->ask($questionScreen, $this->getInteractionLanguageHandler($questionScreen));
                 }
 
+                if ($questionScreen->wasCanceled()) {
+                    return $this->handleCancelBeforeSurveySelection();
+                }
+
                 if ($questionScreen->validationFailed()) {
                     return $this->askCancelOrGoToListOfSurveys();
                 }
@@ -274,6 +278,9 @@ class SurveyConversation extends Conversation
 
                 if (! $questionScreen->isDone()) {
                     return $this->ask($questionScreen, $this->getSurveyHandler($questionScreen));
+                }
+                if ($questionScreen->wasCanceled()) {
+                    return $this->handleCancelBeforeSurveySelection();
                 }
 
                 $selectedSurvey = $questionScreen->getQuestion()->getValidatedAnswerValue();
@@ -324,6 +331,10 @@ class SurveyConversation extends Conversation
                     return $this->ask($questionScreen, $this->getSurveyLanguageHandler($questionScreen));
                 }
 
+                if ($questionScreen->wasCanceled()) {
+                    return $this->handleCancelAfterSurveySelection();
+                }
+
                 if ($questionScreen->validationFailed()) {
                     return $this->askCancelOrGoToListOfSurveys();
                 }
@@ -368,6 +379,10 @@ class SurveyConversation extends Conversation
 
                 if (! $messageScreen->isDone()) {
                     return $this->ask($messageScreen, $this->getShowSurveyInformationHandler($messageScreen));
+                }
+
+                if ($messageScreen->wasCanceled()) {
+                    return $this->handleCancelAfterSurveySelection();
                 }
 
                 $this->askTasks();
@@ -441,7 +456,7 @@ class SurveyConversation extends Conversation
 
         $question = new SelectQuestion($field, 'value', 'display');
 
-        $questionScreen = new QuestionScreen($question);
+        $questionScreen = new QuestionScreen($question, false);
 
         $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
     }
@@ -538,6 +553,10 @@ class SurveyConversation extends Conversation
                     return $this->ask($questionScreen, $this->getFieldHandler($questionScreen, $field));
                 }
 
+                if ($questionScreen->wasCanceled()) {
+                    return $this->handleCancelAfterSurveySelection();
+                }
+
                 $this->answers[] = $questionScreen->getQuestion()->toPayload();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking field:'.$exception->getMessage(), ['field' => $field]);
@@ -575,7 +594,7 @@ class SurveyConversation extends Conversation
 
         $question = new SelectQuestion($field, 'value', 'display');
 
-        $questionScreen = new QuestionScreen($question);
+        $questionScreen = new QuestionScreen($question, false);
 
         $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
     }
@@ -712,5 +731,15 @@ class SurveyConversation extends Conversation
         }
 
         return true;
+    }
+
+    public function handleCancelBeforeSurveySelection()
+    {
+        $this->cancelConversation();
+    }
+
+    public function handleCancelAfterSurveySelection()
+    {
+        $this->askSurvey();
     }
 }
