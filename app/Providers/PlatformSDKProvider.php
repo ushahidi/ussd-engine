@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use PlatformSDK\Ushahidi;
+use Ushahidi\Platform\Client;
 
 class PlatformSDKProvider extends ServiceProvider
 {
@@ -14,8 +14,12 @@ class PlatformSDKProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(Ushahidi::class, function ($app) {
-            return new Ushahidi(env('USHAHIDI_PLATFORM_API_URL'), env('USHAHIDI_PLATFORM_API_VERSION', 5));
+        $this->app->bind(Client::class, function () {
+            $options = [
+                'timeout' => (float) env('USHAHIDI_PLATFORM_API_TIMEOUT') ?: 2.0,
+            ];
+
+            return new Client(env('USHAHIDI_PLATFORM_API_URL'), $options, env('USHAHIDI_PLATFORM_API_VERSION', 5));
         });
     }
 
