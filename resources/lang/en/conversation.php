@@ -45,6 +45,10 @@ return [
       'value' => 'O',
       'text' => 'Ok',
     ],
+    'cancel' => [
+      'value' => 'C',
+      'text' => 'Cancel',
+    ],
   ],
   'omissionIndicator' => '...',
   'geolocation' => [

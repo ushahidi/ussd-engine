@@ -43,7 +43,11 @@ return [
     ],
     'ok' => [
       'value' => 'O',
-      'text' => 'Entendido',
+      'text' => 'Okay',
+    ],
+    'cancel' => [
+      'value' => 'C',
+      'text' => 'Cancelar',
     ],
   ],
   'omissionIndicator' => '...',
