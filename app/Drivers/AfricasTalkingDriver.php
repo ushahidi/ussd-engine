@@ -28,7 +28,7 @@ class AfricasTalkingDriver extends WebDriver
         $payload = [
             'driver' => 'web',
             'message' => isset($data['text']) ? $this->splitMessage($data['text']) : null,
-            'userId' =>  isset($data['sessionId']) ? $data['sessionId'] : null,
+            'userId' =>  isset($data['phoneNumber']) ? $data['phoneNumber'] : null,
         ];
 
         $this->payload = $payload;
