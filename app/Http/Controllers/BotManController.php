@@ -6,6 +6,9 @@ use App\Conversations\ExampleConversation;
 use BotMan\BotMan\BotMan;
 use Illuminate\Http\Request;
 
+/**
+ * This controller allows to interact with Botman for testing purposes.
+ */
 class BotManController extends Controller
 {
     /**

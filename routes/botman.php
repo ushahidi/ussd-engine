@@ -6,6 +6,7 @@ use BotMan\BotMan\Drivers\DriverManager;
 
 DriverManager::loadDriver(AfricasTalkingDriver::class);
 
+// Botman commands for testing
 $botman = resolve('botman');
 
 $botman->hears('Hi', function ($bot) {

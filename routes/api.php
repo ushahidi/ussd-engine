@@ -28,4 +28,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 |
 */
 
+/*
+ *  This is the route you should give Africa's Talking to send and receive messages from.
+ */
 Route::post('/africastalking', 'AfricasTalkingController@handle');
