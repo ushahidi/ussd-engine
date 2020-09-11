@@ -14,6 +14,8 @@ class Page
     /**
      * Registered options for this page's scope.
      *
+     * Used to check is an option is supported for this page.
+     *
      * @var array
      */
     protected $pageOptions = [];
@@ -61,6 +63,9 @@ class Page
                 $builder->appendText($text);
                 $text = null;
             } else {
+                /**
+                 * Append as much as possible and returns the rest to use it in the other page.
+                 */
                 $text = $builder->appendExceedingText($text);
             }
         }
@@ -78,6 +83,9 @@ class Page
                 if ($builder->hasEnoughSpaceForText($optionText, $isTheLastPiecePendingForAttachment)) {
                     $builder->appendText($optionText);
                 } else {
+                    /**
+                     * Append as much as possible and returns the rest to use it in the other page.
+                     */
                     $newOptionText = $builder->appendExceedingText($optionText);
                     $option->text = $newOptionText;
                     array_unshift($options, $option);
@@ -90,7 +98,9 @@ class Page
             $this->next = new self($text, $screenOptions, $options, $this);
         }
 
+        // all the appended text, including options
         $this->text = $builder->getPageContent();
+        // page options for this page
         $this->pageOptions = $builder->getPageOptionsValues();
     }
 
