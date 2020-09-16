@@ -1,18 +1,16 @@
 # Introducing the screens concept
 
-From now on, the screens concept will be around when talking about the interaction system we have designed using Botman. And, precisely because we are using Botman, a screen is an special type of question, extending the Botman question, designed to wrap a field question and control the interaction of the user with the question.
+A screen is an special type of question, extending the Botman question, designed to wrap a field question and control the interaction of the user with the question.
 
-As we think of this screens concept, it comes to mind that it is not specific for the implementation of pagination, we already have implementend some interactive features that work as separate from the process of actually answering a question, and that is absolutely right. It just happens that this is when we actually need it, and it's a must have in order to keep consistency, simplicity and logic.
 
-As a consequence of this implementation, some refactoring (not reinventing the wheel here, keep calm) is expected. Things like "Show more info", displaying errors and showing hints are going to be lifted from the conversation level to the screen level.
-
-Here's how the different levels would look:
-
-[https://whimsical.com/7VzPWjnvBo7q8XjJ2tgZ9L](https://whimsical.com/7VzPWjnvBo7q8XjJ2tgZ9L)
 
 # Explaining the three levels of interaction
 
-And here is how each level will work:
+Here's how the different levels look:
+
+[https://whimsical.com/7VzPWjnvBo7q8XjJ2tgZ9L](https://whimsical.com/7VzPWjnvBo7q8XjJ2tgZ9L)
+
+And here is how each level work:
 
 ## **Survey Conversation level:**
 
@@ -20,7 +18,7 @@ Has the survey and fields data. Creates question objects and pass them to the sc
 
 - It gets the text content from the screen and passes it to botman.
 - When the user sends something, it takes the answer from botman and passes it to the screen.
-- If the screen indicates that it should be sent back again to the user, the question screen is repeated with the content returned it's new content (maybe is the next/previous page, or hints, or errors, we'll never know at this level). This step will repeat until the question screen indicates otherwise, meaning that there will not be more interaction with the user for that question.
+- If the screen indicates that it should be sent back again to the user, the question screen is repeated with it's new content (maybe is the next/previous page, or hints, or errors, we'll never know at this level). This step will repeat until the question screen indicates otherwise, meaning that there will not be more interaction with the user for that question.
 - After that, the flow will continue as it is already designed.
 
 ## **Question Screen level:**
@@ -29,7 +27,7 @@ Everything the user see, read, send or interact with have to go through this lev
 
 - It gets the field question label, instructions, options, hints, errors, etc from the field question and paginates accordingly by taking into consideration things like the max characters limit stablished and the amount of characters reserved to include navigation options.
 - It intercepts all the answers passed from the survey conversation to verify if the user is trying to navigate or interact with the question before answering. If the input sent is not recognized as a known trigger and there is not any other condition to prevent it, the answer will be passed to the field question for evaluation.
-- It will use the the field question to determine which options to include, for example: Skip question, Show more info, etc
+- It uses the the field question to determine which options to include, for example: Skip question, Show more info, etc
 
 ## **Field Question Level:**
 
