@@ -6,7 +6,7 @@ The SurveyConversation class is extending the Botman conversation class. We are 
 
 You can read more about Botman conversations here: https://botman.io/2.0/conversations
 
-In other words, the SurveyConversation class, at a high level, is just passing creating and passing questions to Botman. 
+In other words, the SurveyConversation class, at a high level, is just creating and passing questions (actually QuestionScreens, which extends Botman question class) to Botman. 
 Botman itself is responsible for the caching of the conversation and the serialization needed for that.
 
 The survey conversation can be started anywhere, but as of right now it is being started as a fallback from the AfricasTalkingController.
