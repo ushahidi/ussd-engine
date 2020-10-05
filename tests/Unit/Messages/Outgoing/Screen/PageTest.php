@@ -152,7 +152,7 @@ class PageTest extends TestCase
         new Page($this->shortText, $this->screenOptions, []);
     }
 
-    public function test_it_creates_a_new_page_if_at_least_one_word_of_the_option_label_can_fit_available_characters_count()
+    public function test_it_creates_a_new_page_if_it_can_not_fit_at_least_one_word_from_a_question_option()
     {
         Config::set('ussd.max_characters_per_page', 90);
         $text = 'Which form do you want to complete?';
@@ -162,7 +162,6 @@ class PageTest extends TestCase
             new Option('3', 'COVID-19'),
         ];
         $expected = "Which form do you want to complete?\n[1] Basic Post\n[2] Location Survey\n[C] Cancel\n[N] Next";
-        dump(mb_strlen($expected));
 
         $page = new Page($text, $this->screenOptions, $questionOptions);
 

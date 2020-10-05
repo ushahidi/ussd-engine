@@ -78,6 +78,7 @@ class Page
                 $this->appendText($text);
                 $text = null;
             } else {
+                $this->appendNextPageOption();
                 $charactersAppended = $this->appendExceedingText($text);
                 $text = Str::substr($text, $charactersAppended);
                 $next = new self($text, $screenOptions, $options, $this);
@@ -94,16 +95,15 @@ class Page
             if ($this->doesFit($optionText)) {
                 $this->appendText($optionText);
             } else {
+                $this->appendNextPageOption();
                 $optionAndFirstWord = Str::words($optionText, 2, '');
                 if ($this->doesFit($optionAndFirstWord)) {
                     $charactersAppended = $this->appendExceedingText($optionText);
                     $charactersAppended -= Str::length($option->getValueAsString());
-                } else {
-                    $charactersAppended = 0;
+                    $newOptionText = Str::substr($option->text, $charactersAppended);
+                    $option->text = $newOptionText;
                 }
 
-                $newOptionText = Str::substr($option->text, $charactersAppended);
-                $option->text = $newOptionText;
                 array_unshift($options, $option);
                 $next = new self($text, $screenOptions, $options, $this);
                 $this->setNextPage($next);
@@ -165,7 +165,6 @@ class Page
 
     public function appendExceedingText(string $text): int
     {
-        $this->appendNextPageOption();
         $omissionIndicator = __('conversation.omissionIndicator');
         $omissionIndicatorLength = Str::length($omissionIndicator);
         $availableCharactersCount = $this->getAvailableCharactersCount() - $omissionIndicatorLength - Str::length(self::TEXT_SEPARATOR);
