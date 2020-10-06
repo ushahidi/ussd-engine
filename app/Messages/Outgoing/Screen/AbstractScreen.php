@@ -102,7 +102,7 @@ abstract class AbstractScreen extends Question
 
     public function transitionToErrorPage(string $errorMessage): void
     {
-        $errorPage = new Page($errorMessage, [], [], $this->currentPage);
+        $errorPage = new Page([$errorMessage], [], $this->currentPage);
         $this->setCurrentPage($errorPage);
     }
 

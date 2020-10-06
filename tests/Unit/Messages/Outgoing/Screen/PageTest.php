@@ -25,10 +25,15 @@ class PageTest extends TestCase
         ];
 
         $this->questionOptions = [
-          new Option('1', 'English'),
-          new Option('2', 'Spanish'),
-          new Option('3', 'French'),
+          '[1] English',
+          '[2] Spanish',
+          '[3] French',
         ];
+    }
+
+    public function getTextWithOptions(string $text): array
+    {
+        return array_merge([$text], $this->questionOptions);
     }
 
     public function assertPageContentLengthIsCorrect(string $text)
@@ -39,7 +44,7 @@ class PageTest extends TestCase
     public function test_it_creates_only_one_screen_if_text_does_fit_and_without_screen_or_question_options()
     {
         $expected = $this->shortText;
-        $page = new Page($this->shortText, [], []);
+        $page = new Page([$this->shortText], []);
 
         $this->assertEquals($expected, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -48,7 +53,7 @@ class PageTest extends TestCase
     public function test_it_creates_multiple_pages_if_text_does_not_fit_and_without_screen_or_question_options()
     {
         $expectedForFirstPage = "Be aware that not all surveys have all languages. Unfortunately this list isn’t filtered by country. Because of this, it may happen that some...\n[N] Next";
-        $page = new Page($this->longText, [], []);
+        $page = new Page([$this->longText], []);
 
         $this->assertEquals($expectedForFirstPage, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -66,7 +71,7 @@ class PageTest extends TestCase
     public function test_it_creates_only_one_screen_if_text_and_screen_options_fit_and_without_question_options()
     {
         $expected = "Choose one of the available languages:\n[C] Cancel";
-        $page = new Page($this->shortText, $this->screenOptions, []);
+        $page = new Page([$this->shortText], $this->screenOptions);
 
         $this->assertEquals($expected, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -75,7 +80,7 @@ class PageTest extends TestCase
     public function test_it_creates_multiple_pages_if_text_and_screen_options_dont_fit_and_without_question_options()
     {
         $expectedForFirstPage = "Be aware that not all surveys have all languages. Unfortunately this list isn’t filtered by country. Because of this, it may happen that...\n[C] Cancel\n[N] Next";
-        $page = new Page($this->longText, $this->screenOptions, []);
+        $page = new Page([$this->longText], $this->screenOptions);
 
         $this->assertEquals($expectedForFirstPage, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -93,7 +98,8 @@ class PageTest extends TestCase
     public function test_it_creates_only_one_screen_if_text_and_question_options_fit_and_without_screen_options()
     {
         $expected = "Choose one of the available languages:\n[1] English\n[2] Spanish\n[3] French";
-        $page = new Page($this->shortText, [], $this->questionOptions);
+        $textPieces = array_merge([$this->shortText], $this->questionOptions);
+        $page = new Page($textPieces, []);
 
         $this->assertEquals($expected, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -102,7 +108,8 @@ class PageTest extends TestCase
     public function test_it_creates_multiple_pages_if_text_and_question_options_dont_fit_and_without_screen_options()
     {
         $expectedForFirstPage = "Be aware that not all surveys have all languages. Unfortunately this list isn’t filtered by country. Because of this, it may happen that some...\n[N] Next";
-        $page = new Page($this->longText, [], $this->questionOptions);
+        $textPieces = array_merge([$this->longText], $this->questionOptions);
+        $page = new Page($textPieces, []);
 
         $this->assertEquals($expectedForFirstPage, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -120,7 +127,8 @@ class PageTest extends TestCase
     public function test_it_creates_only_one_screen_if_text_and_screen_and_question_options_fit_all_in_the_same_page()
     {
         $expected = "Choose one of the available languages:\n[1] English\n[2] Spanish\n[3] French\n[C] Cancel";
-        $page = new Page($this->shortText, $this->screenOptions, $this->questionOptions);
+        $textPieces = array_merge([$this->shortText], $this->questionOptions);
+        $page = new Page($textPieces, $this->screenOptions);
 
         $this->assertEquals($expected, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -129,7 +137,8 @@ class PageTest extends TestCase
     public function test_it_creates_multiple_pages_if_text_and_screen_and_question_options_dont_fit_all_in_the_same_page()
     {
         $expectedForFirstPage = "Be aware that not all surveys have all languages. Unfortunately this list isn’t filtered by country. Because of this, it may happen that...\n[C] Cancel\n[N] Next";
-        $page = new Page($this->longText, $this->screenOptions, $this->questionOptions);
+        $textPieces = array_merge([$this->longText], $this->questionOptions);
+        $page = new Page($textPieces, $this->screenOptions);
 
         $this->assertEquals($expectedForFirstPage, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
@@ -149,23 +158,148 @@ class PageTest extends TestCase
         $this->expectException(\Exception::class);
 
         $this->screenOptions[] = new Option('-', str_repeat('-', $this->maxCharactersPerPage + 1));
-        new Page($this->shortText, $this->screenOptions, []);
+        new Page([$this->shortText], $this->screenOptions);
     }
 
     public function test_it_creates_a_new_page_if_it_can_not_fit_at_least_one_word_from_a_question_option()
     {
         Config::set('ussd.max_characters_per_page', 90);
-        $text = 'Which form do you want to complete?';
-        $questionOptions = [
-            new Option('1', 'Basic Post'),
-            new Option('2', 'Location Survey'),
-            new Option('3', 'COVID-19'),
+        $textPieces = [
+            'Which form do you want to complete?',
+            '[1] Basic Post',
+            '[2] Location Survey',
+            '[3] COVID-19',
         ];
         $expected = "Which form do you want to complete?\n[1] Basic Post\n[2] Location Survey\n[C] Cancel\n[N] Next";
 
-        $page = new Page($text, $this->screenOptions, $questionOptions);
+        $page = new Page($textPieces, $this->screenOptions);
 
         $this->assertEquals($expected, $page->getText());
         $this->assertPageContentLengthIsCorrect($page->getText());
+        $this->assertTrue($page->hasNext());
+
+        $secondPage = $page->getNext();
+        $expectedForSecondPage = "[3] COVID-19\n[C] Cancel\n[P] Previous";
+
+        $this->assertEquals($expectedForSecondPage, $secondPage->getText());
+        $this->assertPageContentLengthIsCorrect($secondPage->getText());
+        $this->assertFalse($secondPage->hasNext());
+        $this->assertTrue($secondPage->hasPrevious());
+    }
+
+    public function test_it_can_move_one_text_piece_to_the_next_page_if_needed_for_appending_the_next_option()
+    {
+        Config::set('ussd.max_characters_per_page', 90);
+        $textPieces = [
+            'Which form do you want to complete?',
+            '[1] Basic Post',
+            '[2] Final Location Survey',
+            '[3] COVID-19',
+        ];
+        $expected = "Which form do you want to complete?\n[1] Basic Post\n[2] Final...\n[C] Cancel\n[N] Next";
+
+        $page = new Page($textPieces, $this->screenOptions);
+
+        $this->assertEquals($expected, $page->getText());
+        $this->assertPageContentLengthIsCorrect($page->getText());
+        $this->assertTrue($page->hasNext());
+
+        $secondPage = $page->getNext();
+        $expectedForSecondPage = " Location Survey\n[3] COVID-19\n[C] Cancel\n[P] Previous";
+
+        $this->assertEquals($expectedForSecondPage, $secondPage->getText());
+        $this->assertPageContentLengthIsCorrect($secondPage->getText());
+        $this->assertFalse($secondPage->hasNext());
+        $this->assertTrue($secondPage->hasPrevious());
+    }
+
+    public function test_it_can_move_two_text_pieces_to_the_next_page_if_needed_for_appending_the_next_option()
+    {
+        Config::set('ussd.max_characters_per_page', 90);
+        $textPieces = [
+            'Which form do you want to complete?',
+            '[1] Basic Post',
+            '[2] Location-Survey 01-10-2020',
+            '[3] COVID-19',
+        ];
+        $expected = "Which form do you want to complete?\n[1] Basic Post\n[C] Cancel\n[N] Next";
+
+        $page = new Page($textPieces, $this->screenOptions);
+
+        $this->assertEquals($expected, $page->getText());
+        $this->assertPageContentLengthIsCorrect($page->getText());
+        $this->assertTrue($page->hasNext());
+
+        $secondPage = $page->getNext();
+        $expectedForSecondPage = "[2] Location-Survey 01-10-2020\n[3] COVID-19\n[C] Cancel\n[P] Previous";
+
+        $this->assertEquals($expectedForSecondPage, $secondPage->getText());
+        $this->assertPageContentLengthIsCorrect($secondPage->getText());
+        $this->assertFalse($secondPage->hasNext());
+        $this->assertTrue($secondPage->hasPrevious());
+    }
+
+    public function test_it_can_distribute_breakable_text_pieces_across_multiple_pages_if_needed_for_appending_the_next_option()
+    {
+        Config::set('ussd.max_characters_per_page', 90);
+        $textPieces = [
+            'Which form do you want to complete?',
+            '[1] Basic Post',
+            '[2] Location-Survey 01-10-2020',
+            '[3] Location-Survey 02-10-2020',
+            '[4] COVID-19',
+        ];
+        $expected = "Which form do you want to complete?\n[1] Basic Post\n[C] Cancel\n[N] Next";
+
+        $page = new Page($textPieces, $this->screenOptions);
+
+        $this->assertEquals($expected, $page->getText());
+        $this->assertPageContentLengthIsCorrect($page->getText());
+        $this->assertTrue($page->hasNext());
+
+        $secondPage = $page->getNext();
+        $expectedForSecondPage = "[2] Location-Survey 01-10-2020\n[3] Location-Survey...\n[C] Cancel\n[P] Previous\n[N] Next";
+
+        $this->assertEquals($expectedForSecondPage, $secondPage->getText());
+        $this->assertPageContentLengthIsCorrect($secondPage->getText());
+        $this->assertTrue($secondPage->hasNext());
+        $this->assertTrue($secondPage->hasPrevious());
+
+        $thirdPage = $secondPage->getNext();
+        $expectedForThirdPage = " 02-10-2020\n[4] COVID-19\n[C] Cancel\n[P] Previous";
+
+        $this->assertEquals($expectedForThirdPage, $thirdPage->getText());
+        $this->assertPageContentLengthIsCorrect($thirdPage->getText());
+        $this->assertFalse($thirdPage->hasNext());
+        $this->assertTrue($thirdPage->hasPrevious());
+    }
+
+    public function test_it_can_distribute_non_breakable_text_pieces_across_multiple_pages_if_needed_for_appending_the_next_option()
+    {
+        Config::set('ussd.max_characters_per_page', 70);
+        $textPieces = [
+            'Which form do you want to complete?',
+            '[1] A',
+            '[2] B',
+            '[3] C',
+            '[4] D',
+            '[5] E',
+            '[6] F',
+        ];
+        $expected = "Which form do you want to complete?\n[1] A\n[2] B\n[C] Cancel\n[N] Next";
+
+        $page = new Page($textPieces, $this->screenOptions);
+
+        $this->assertEquals($expected, $page->getText());
+        $this->assertPageContentLengthIsCorrect($page->getText());
+        $this->assertTrue($page->hasNext());
+
+        $secondPage = $page->getNext();
+        $expectedForSecondPage = "[3] C\n[4] D\n[5] E\n[6] F\n[C] Cancel\n[P] Previous";
+
+        $this->assertEquals($expectedForSecondPage, $secondPage->getText());
+        $this->assertPageContentLengthIsCorrect($secondPage->getText());
+        $this->assertFalse($secondPage->hasNext());
+        $this->assertTrue($secondPage->hasPrevious());
     }
 }
