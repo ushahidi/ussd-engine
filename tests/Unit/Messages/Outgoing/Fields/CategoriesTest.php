@@ -156,4 +156,11 @@ class CategoriesTest extends TestCase
 
         $this->assertEquals([2, 3], $categoriesQuestion->getValidatedAnswerValue());
     }
+
+    public function test_it_returns_empty_array_if_no_answer_was_set()
+    {
+        $categoriesQuestion = new Categories($this->field);
+
+        $this->assertEquals([], $categoriesQuestion->getValidatedAnswerValue());
+    }
 }

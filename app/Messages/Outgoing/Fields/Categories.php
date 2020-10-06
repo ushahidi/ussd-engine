@@ -44,6 +44,10 @@ class Categories extends SelectQuestion
 
     public function getValidatedAnswerValue()
     {
+        if (empty($this->answerValue)) {
+            return [];
+        }
+
         $selectedCategories = [];
         foreach ($this->answerValue as $option) {
             $selectedCategories[] = $this->optionsMap[$option];
