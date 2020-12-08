@@ -25,6 +25,7 @@ jobs:
       uses: shivammathur/setup-php@master
       with:
         php-version: ${{ matrix.php_version }}
+        composer: 1.10.19
 
     - name: Get Composer Cache Directory
       id: composer-cache
