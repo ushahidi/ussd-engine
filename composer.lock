@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "082730180239245ea6793ddf68eb8a9c",
+    "content-hash": "6b50b31bea1dd9e9e3354840e6294766",
     "packages": [
         {
             "name": "botman/botman",
@@ -4798,12 +4798,12 @@
             "version": "v6.18.34",
             "source": {
                 "type": "git",
-                "url": "https://github.com/tightenco/collect.git",
+                "url": "https://github.com/tighten/collect.git",
                 "reference": "624b86cde21f8d9ba14ec0e4974ef0aca3922a1c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tightenco/collect/zipball/624b86cde21f8d9ba14ec0e4974ef0aca3922a1c",
+                "url": "https://api.github.com/repos/tighten/collect/zipball/624b86cde21f8d9ba14ec0e4974ef0aca3922a1c",
                 "reference": "624b86cde21f8d9ba14ec0e4974ef0aca3922a1c",
                 "shasum": ""
             },
@@ -4898,12 +4898,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ushahidi/platform-sdk-php.git",
-                "reference": "a639fc9696f09bf93396d059ead866d8422ba7e4"
+                "reference": "9e1b4c6027a2496bdac1e89f5d109d9ddb868901"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/a639fc9696f09bf93396d059ead866d8422ba7e4",
-                "reference": "a639fc9696f09bf93396d059ead866d8422ba7e4",
+                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/9e1b4c6027a2496bdac1e89f5d109d9ddb868901",
+                "reference": "9e1b4c6027a2496bdac1e89f5d109d9ddb868901",
                 "shasum": ""
             },
             "require": {
@@ -4912,7 +4912,7 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "PlatformSDK\\": "src/"
+                    "Ushahidi\\Platform\\": "src/"
                 }
             },
             "license": [
@@ -4926,10 +4926,10 @@
             ],
             "description": "An SDK for the v5+ Ushahidi Platform",
             "support": {
-                "source": "https://github.com/ushahidi/platform-sdk-php/tree/master",
+                "source": "https://github.com/ushahidi/platform-sdk-php/tree/v0.1",
                 "issues": "https://github.com/ushahidi/platform-sdk-php/issues"
             },
-            "time": "2020-08-12T13:15:09+00:00"
+            "time": "2020-09-03T12:11:51+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
