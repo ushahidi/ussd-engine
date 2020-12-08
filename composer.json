@@ -36,8 +36,7 @@
         "phpunit/phpunit": "^7.0"
     },
     "autoload": {
-        "classmap": [
-        ],
+        "classmap": [],
         "psr-4": {
             "App\\": "app/"
         }
@@ -70,6 +69,9 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover"
+        ],
+        "test": [
+            "phpunit --testdox"
         ]
     },
     "config": {

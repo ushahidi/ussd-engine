@@ -28,16 +28,13 @@ class QuestionScreen extends AbstractScreen
 
     public function buildInitialPage(): Page
     {
-        $options = $this->mapQuestionButtonsToScreenOptions($this->question->getButtons());
+        $textPieces = [$this->getQuestionText()];
 
-        return new Page($this->getQuestionText(), $this->getDefaultScreenOptions(), $options);
-    }
+        foreach ($this->question->getButtons() as $button) {
+            $textPieces[] = "[{$button['value']}] {$button['text']}";
+        }
 
-    public function mapQuestionButtonsToScreenOptions(array $buttons): array
-    {
-        return array_map(function (array $button) {
-            return new Option($button['value'], $button['text']);
-        }, $buttons);
+        return new Page($textPieces, $this->getDefaultScreenOptions());
     }
 
     public function setAnswer(Answer $answer): void
@@ -92,7 +89,7 @@ class QuestionScreen extends AbstractScreen
     public function transitionToQuestionInfoPage()
     {
         $info = $this->question->getMoreInfoContent();
-        $infoPage = new Page($info, [], [], $this->currentPage);
+        $infoPage = new Page([$info], [], $this->currentPage);
         $this->setCurrentPage($infoPage);
     }
 

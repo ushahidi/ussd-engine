@@ -2,21 +2,40 @@
 
 namespace App\Messages\Outgoing\Screen;
 
+use Exception;
 use Illuminate\Support\Str;
 
 class Page
 {
+    public const TEXT_SEPARATOR = "\n";
+    const WHITE_SPACE = ' ';
+
     /**
-     * @var string
+     * Available characters count to use when checking if text will fit.
+     * @var int
      */
-    public $text;
+    protected $availableCharactersCount;
+
+    /**
+     * Text pieces to concatenate for this page.
+     *
+     * @var array
+     */
+    protected $textPieces = [];
+
+    /**
+     * Screen options to include in this page.
+     *
+     * @var array
+     */
+    protected $screenOptions = [];
 
     /**
      * Registered options for this page's scope.
      *
      * @var array
      */
-    protected $pageOptions = [];
+    protected $screenOptionsValues = [];
 
     /**
      * Next page.
@@ -35,68 +54,121 @@ class Page
     /**
      * Create a page with the text and options included.
      *
-     * @param string|null $text The page text
-     * @param array $screenOptions Options that should be available in this and every mew child page created
-     * @param array $options Options to show on this page only. Almost always they are question options.
+     * @param array $textPieces  Text pieces to concatenate for this or child pages
+     * @param array $screenOptions Options that should always be available in this and every new child page created
      * @param self $previous The previous page that created this instance.
      */
-    public function __construct(?string $text, array $screenOptions = [], array $options = [], self $previous = null)
+    public function __construct(array $textPieces = [], array $screenOptions = [], self $previous = null)
     {
-        $omissionIndicator = __('conversation.omissionIndicator');
-        $builder = new PageContentBuilder();
+        $this->availableCharactersCount = self::getMaxCharactersPerPage();
 
         // The default screen options have priorities over everything else
         foreach ($screenOptions as $option) {
-            $builder->appendPageOption($option);
+            $this->appendScreenOption($option);
         }
 
         // If there's a previous page save the reference and attach previous option to the page content
         if ($previous != null) {
-            $this->previous = $previous;
-            $builder->appendPreviousPageOption();
+            $this->setPreviousPage($previous);
         }
 
-        if ($text) {
-            if ($builder->hasEnoughSpaceForText($text)) {
-                $builder->appendText($text);
-                $text = null;
+        while (count($textPieces) > 0) {
+            $textPiece = array_shift($textPieces);
+            /*
+             * If a text piece fit in the current page, we just append that piece to the list.
+             *
+             * If not we should create a new page, include the next option in this current page and append
+             * as much words as posible from the text piece we are trying to add.
+             */
+            if ($this->doesFit($textPiece)) {
+                $this->appendText($textPiece);
             } else {
-                $text = $builder->appendExceedingText($text);
-            }
-        }
-
-        /*
-         * Only if the page is not already full we'll try to append the options
-         */
-        if (! $builder->hasNextPageOption() && count($options) > 0) {
-            $availableCharacters = $builder->getAvailableCharactersCount();
-            while (! $builder->hasNextPageOption() && $availableCharacters > 0 && count($options) > 0) {
-                $option = array_shift($options);
-                $optionText = $option->getText();
-                $isTheLastPiecePendingForAttachment = count($options) === 0;
-
-                if ($builder->hasEnoughSpaceForText($optionText, $isTheLastPiecePendingForAttachment)) {
-                    $builder->appendText($optionText);
-                } else {
-                    $newOptionText = $builder->appendExceedingText($optionText);
-                    $option->text = $newOptionText;
-                    array_unshift($options, $option);
+                /**
+                 * Sometimes we may need to make room the "Next" option,
+                 * if that's the case we should try to append as much words as possible from the last
+                 * removed text piece and send the rest to the next page.
+                 */
+                $removedTextPieces = $this->appendNextPageOption();
+                if (! empty($removedTextPieces)) {
+                    array_unshift($textPieces, $textPiece);
+                    $textPiece = array_shift($removedTextPieces);
+                    if (! empty($removedTextPieces)) {
+                        $textPieces = array_merge($removedTextPieces, $textPieces);
+                    }
                 }
-                $availableCharacters = $builder->getAvailableCharactersCount();
+                $firstTwoWords = Str::words($textPiece, 2, '');
+                $omissionIndicator = self::getOmissionIndicator();
+                $usefulTextPieceSegment = $firstTwoWords.$omissionIndicator;
+                if ($this->doesFit($usefulTextPieceSegment)) {
+                    $charactersAppended = $this->appendExceedingText($textPiece);
+                    $textPiece = Str::substr($textPiece, $charactersAppended);
+                }
+
+                array_unshift($textPieces, $textPiece);
+                $next = new self($textPieces, $screenOptions, $this);
+                $this->setNextPage($next);
+
+                return;
             }
         }
+    }
 
-        if ($builder->hasNextPageOption()) {
-            $this->next = new self($text, $screenOptions, $options, $this);
+    /**
+     * Register a screen option.
+     *
+     * @param Option $option
+     * @return void
+     */
+    public function appendScreenOption(Option $option): void
+    {
+        $text = $option->toString();
+        $textLength = Str::length($text);
+        $this->checkScreenOptionsLength($textLength);
+        $this->reserveCharacters($textLength);
+        $this->screenOptions[] = $text;
+        $this->screenOptionsValues[] = $option->value;
+    }
+
+    /**
+     * Check the amount of characters reserved for screen options specifically.
+     *
+     * Throws an exception if the amount surpass the max characters allowed per page
+     *
+     * @param int $lengthToAdd
+     * @return void
+     */
+    public function checkScreenOptionsLength(int $lengthToAdd = 0): void
+    {
+        $totalCharactersTakenByScreenOptions = array_sum(array_map(function ($screenOption) {
+            return Str::length($screenOption);
+        }, $this->screenOptions));
+
+        $separatorsLength = count($this->screenOptions) * Str::length(self::TEXT_SEPARATOR);
+        $totalCharactersTakenByScreenOptions += $separatorsLength;
+
+        $totalCharactersTakenByScreenOptions += $lengthToAdd;
+
+        if ($totalCharactersTakenByScreenOptions >= self::getMaxCharactersPerPage()) {
+            throw new Exception('Characters limit will be reached with page options only.');
         }
+    }
 
-        $this->text = $builder->getPageContent();
-        $this->pageOptions = $builder->getPageOptionsValues();
+    public function getAvailableCharactersCount(): int
+    {
+        $separatorsCount = count($this->screenOptions) + count($this->textPieces) - 1;
+        $separatorsLength = $separatorsCount * Str::length(self::TEXT_SEPARATOR);
+
+        return $this->availableCharactersCount - $separatorsLength;
+    }
+
+    public function doesFit(string $text): bool
+    {
+        return Str::length($text) <= $this->getAvailableCharactersCount();
     }
 
     public function hasScreenOption(string $option): bool
     {
-        foreach ($this->pageOptions as $registeredOption) {
+        foreach ($this->screenOptionsValues as $registeredOption) {
             if (AbstractScreen::isEqualToOption($option, $registeredOption)) {
                 return true;
             }
@@ -107,7 +179,57 @@ class Page
 
     public function getText(): string
     {
-        return $this->text;
+        $pageContent = array_merge($this->textPieces, $this->screenOptions);
+
+        return implode(self::TEXT_SEPARATOR, $pageContent);
+    }
+
+    public function appendText(string $text): void
+    {
+        $this->reserveCharacters(Str::length($text));
+        $this->textPieces[] = $text;
+    }
+
+    /**
+     * Append as many words as possible from the provided text.
+     *
+     * @param string $text
+     * @return int The number of characters appended
+     */
+    public function appendExceedingText(string $text): int
+    {
+        $omissionIndicator = self::getOmissionIndicator();
+        $omissionIndicatorLength = Str::length($omissionIndicator);
+        $availableCharactersCount = $this->getAvailableCharactersCount() - $omissionIndicatorLength - Str::length(self::TEXT_SEPARATOR);
+        $remainingCharactersCount = $availableCharactersCount;
+
+        $textToAppend = '';
+        $tok = strtok($text, self::WHITE_SPACE);
+
+        while (Str::length($textToAppend) <= $availableCharactersCount) {
+            $tokToAppend = $textToAppend ? self::WHITE_SPACE.$tok : $tok;
+            $doesFit = Str::length($tokToAppend) <= $remainingCharactersCount;
+            if ($doesFit) {
+                $textToAppend .= $tokToAppend;
+                $remainingCharactersCount -= Str::length($tokToAppend);
+            } else {
+                break;
+            }
+            $tok = strtok(self::WHITE_SPACE);
+        }
+
+        $this->appendText($textToAppend.$omissionIndicator);
+
+        return Str::length($textToAppend);
+    }
+
+    public function reserveCharacters(int $amountOfCharacters):void
+    {
+        if (($this->availableCharactersCount - $amountOfCharacters) < 0) {
+            throw new Exception('Invalid amount of characters to reserve.');
+        }
+
+        $this->availableCharactersCount -= $amountOfCharacters;
     }
 
     public function hasNext(): bool
@@ -128,5 +250,51 @@ class Page
     public function getPrevious(): ?self
     {
         return $this->previous;
+    }
+
+    public function setPreviousPage(self $previous): void
+    {
+        $this->previous = $previous;
+        $this->appendScreenOption(Option::previous());
+    }
+
+    public function setNextPage(self $next): void
+    {
+        $this->next = $next;
+    }
+
+    public function appendNextPageOption(): array
+    {
+        $nextOption = Option::next();
+
+        $optionText = $nextOption->toString();
+        $removedTextPieces = [];
+        while (! $this->doesFit($optionText)) {
+            array_unshift($removedTextPieces, $this->popTextPiece());
+        }
+
+        $this->appendScreenOption($nextOption);
+
+        return $removedTextPieces;
+    }
+
+    public function popTextPiece(): ?string
+    {
+        $textPiece = array_pop($this->textPieces);
+        if ($textPiece) {
+            $this->availableCharactersCount += Str::length($textPiece);
+        }
+
+        return $textPiece;
+    }
+
+    public static function getMaxCharactersPerPage(): int
+    {
+        return (int) config('ussd.max_characters_per_page');
+    }
+
+    public static function getOmissionIndicator(): string
+    {
+        return __('conversation.omissionIndicator');
     }
 }
