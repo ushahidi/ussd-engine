@@ -20,8 +20,28 @@ class Option
         $this->text = $text;
     }
 
-    public function getText(): string
+    public function toString(): string
     {
-        return "\n[{$this->value}] {$this->text}";
+        return "{$this->getValueAsString()} {$this->text}";
+    }
+
+    public function getValueAsString(): string
+    {
+        return "[{$this->value}]";
+    }
+
+    public static function cancel()
+    {
+        return  new self(__('conversation.screen.cancel.value'), __('conversation.screen.cancel.text'));
+    }
+
+    public static function previous()
+    {
+        return new self(__('conversation.screen.previous.value'), __('conversation.screen.previous.text'));
+    }
+
+    public static function next()
+    {
+        return new self(__('conversation.screen.next.value'), __('conversation.screen.next.text'));
     }
 }

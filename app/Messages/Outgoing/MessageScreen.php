@@ -24,7 +24,7 @@ class MessageScreen extends AbstractScreen
 
     public function buildInitialPage(): Page
     {
-        return new Page($this->text, $this->getDefaultScreenOptions());
+        return new Page([$this->text], $this->getDefaultScreenOptions());
     }
 
     public function setAnswer(Answer $answer): void
