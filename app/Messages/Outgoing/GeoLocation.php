@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Ushahidi\Platform\Client;
+use App\Services\PlatformGeocodingClient;
 
 class GeoLocation extends TextQuestion
 {
@@ -70,7 +70,7 @@ class GeoLocation extends TextQuestion
     public function queryLocation(string $query): array
     {
         try {
-            $sdk = resolve(Client::class);
+            $sdk = resolve(PlatformGeocodingClient::class);
             $response = $sdk->queryLocation($query, App::getLocale());
 
             if (isset($response['body'])) {

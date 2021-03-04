@@ -97,6 +97,8 @@ Some important environment variables are:
 - `USHAHIDI_PLATFORM_API_TIMEOUT`:  Depending on your setup, you may want to set a custom timeout for requests to the Ushahidi Platform. It defaults to 2 seconds.
 - `USSD_MAX_CHARACTERS_PER_PAGE`: USSD messages are limited to a fixed amount of characters depending on the telecommunications service provider. This allows to paginate the content delivered to your users. It defaults to 160 characters.
 
+- `USHAHIDI_PLATFORM_GEO_API_TIMEOUT`, `USHAHIDI_PLATFORM_GEO_API_URL`, `USHAHIDI_PLATFORM_GEO_API_VERSION` : settings used specifically when using Ushahidi Platform for geocoding resolution. If not specified, the geocoder uses the general settings mentioned above.
+
 ## TODO
  - API Specification
  - Testing
