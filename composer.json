@@ -77,7 +77,11 @@
     "config": {
         "preferred-install": "dist",
         "sort-packages": true,
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "kylekatarnls/update-helper": true,
+            "thecodingmachine/discovery": true
+        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true
