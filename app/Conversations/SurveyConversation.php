@@ -11,6 +11,7 @@ use App\Messages\Outgoing\MessageScreen;
 use App\Messages\Outgoing\QuestionScreen;
 use App\Messages\Outgoing\SelectQuestion;
 use App\Messages\Outgoing\SurveyQuestion;
+use BotMan\BotMan\Cache\LaravelCache;
 use BotMan\BotMan\Messages\Conversations\Conversation;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use Closure;
@@ -489,6 +490,7 @@ class SurveyConversation extends Conversation
         try {
             $this->sendResponseToPlatform();
             $this->sendEndingMessage(__('conversation.thanksForSubmitting'));
+            $this->forgetConversation();
         } catch (\Throwable $exception) {
             $this->sendEndingMessage(__('conversation.oops'));
         }
@@ -575,7 +577,6 @@ class SurveyConversation extends Conversation
                     return $this->handleCancelAfterSurveySelection();
                 }
 
-
                 $question = $questionScreen->getQuestion();
 
                 if ($question->shouldBeSentToPlaform()) {
@@ -660,6 +661,7 @@ class SurveyConversation extends Conversation
     protected function cancelConversation()
     {
         $this->sendEndingMessage(__('conversation.thankYou'));
+        $this->forgetConversation();
     }
 
     /**
@@ -774,5 +776,12 @@ class SurveyConversation extends Conversation
     {
         $this->selectedLanguage = $language;
         App::setLocale($language);
+    }
+
+    public function forgetConversation()
+    {
+        $cache = new LaravelCache();
+        $cache->pull($this->bot->getMessage()->getConversationIdentifier());
+        $cache->pull($this->bot->getMessage()->getOriginatedConversationIdentifier());
     }
 }
