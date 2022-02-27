@@ -104,7 +104,7 @@ class SurveyConversation extends Conversation
             $this->surveys = Collection::make($surveys);
             $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
-            Log::error('Could not fetch available surveys:'.$exception->getMessage());
+            Log::error('Could not fetch available surveys:' . $exception->getMessage());
             $this->sendEndingMessage(__('conversation.oops'));
         }
     }
@@ -142,13 +142,13 @@ class SurveyConversation extends Conversation
         try {
             $response = $this->sdk->getAvailableSurveys();
 
-            if (! $response['body'] || ! $response['body']['results']) {
+            if (!$response['body'] || !$response['body']['results']) {
                 throw new EmptySurveysResultsException('Empty survey results returned');
             }
 
             return $response['body']['results'];
         } catch (\Throwable $ex) {
-            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            Log::error("Couldn't fetch available surveys: " . $ex->getMessage());
             throw $ex;
         }
     }
@@ -164,13 +164,13 @@ class SurveyConversation extends Conversation
         try {
             $response = $this->sdk->getSurvey($id);
 
-            if (! $response['body'] || ! $response['body']['result']) {
+            if (!$response['body'] || !$response['body']['result']) {
                 throw new EmptySurveysResultsException('Empty survey results returned');
             }
 
             return $response['body']['result'];
         } catch (\Throwable $ex) {
-            Log::error("Couldn't fetch available surveys: ".$ex->getMessage());
+            Log::error("Couldn't fetch available surveys: " . $ex->getMessage());
             throw $ex;
         }
     }
@@ -195,14 +195,23 @@ class SurveyConversation extends Conversation
     protected function askInteractionLanguage()
     {
         $availableLanguagesList = $this->surveys
-                                            ->pluck('enabled_languages')
-                                            ->flatten()
-                                            ->unique()
-                                            ->filter()
-                                            ->values()
-                                            ->all();
+            ->pluck('enabled_languages')
+            ->flatten()
+            ->unique()
+            ->filter()
+            ->values()
+            ->all();
 
         if (empty($availableLanguagesList)) {
+            return $this->askSurvey();
+        }
+
+        $languagesIntersection = LanguageQuestion::filterEnabledLanguages($availableLanguagesList);
+
+        $languages = empty($languagesIntersection) ? $availableLanguagesList : $languagesIntersection;
+
+        if (count($languages) === 1) {
+            $this->setLanguage($languages[0]);
             return $this->askSurvey();
         }
 
@@ -224,7 +233,7 @@ class SurveyConversation extends Conversation
             try {
                 $questionScreen->setAnswer($answer);
 
-                if (! $questionScreen->isDone()) {
+                if (!$questionScreen->isDone()) {
                     if ($questionScreen->validationFailed()) {
                         $questionScreen->dontRepeatAgain();
                     }
@@ -240,11 +249,11 @@ class SurveyConversation extends Conversation
                     return $this->askCancelOrGoToListOfSurveys();
                 }
 
-                $this->selectedLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
-                App::setLocale($this->selectedLanguage);
+                $chosenLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
+                $this->setLanguage($chosenLanguage);
                 $this->askSurvey();
             } catch (\Throwable $exception) {
-                Log::error('Error while asking interaction language:'.$exception->getMessage());
+                Log::error('Error while asking interaction language:' . $exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         };
@@ -276,7 +285,7 @@ class SurveyConversation extends Conversation
             try {
                 $questionScreen->setAnswer($answer);
 
-                if (! $questionScreen->isDone()) {
+                if (!$questionScreen->isDone()) {
                     return $this->ask($questionScreen, $this->getSurveyHandler($questionScreen));
                 }
                 if ($questionScreen->wasCanceled()) {
@@ -285,13 +294,9 @@ class SurveyConversation extends Conversation
 
                 $selectedSurvey = $questionScreen->getQuestion()->getValidatedAnswerValue();
                 $this->setSurvey($this->getSurvey($selectedSurvey));
-                if ($this->shouldAskSurveyLanguage()) {
-                    $this->askSurveyLanguage();
-                } else {
-                    $this->showSurveyInformation();
-                }
+                $this->askSurveyLanguage();
             } catch (\Throwable $exception) {
-                Log::error('Error while asking survey:'.$exception->getMessage());
+                Log::error('Error while asking survey:' . $exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         };
@@ -304,7 +309,20 @@ class SurveyConversation extends Conversation
      */
     protected function askSurveyLanguage()
     {
+        if (!$this->shouldAskSurveyLanguage()) {
+            return $this->showSurveyInformation();
+        }
+
         $surveyLanguages = array_filter(array_merge($this->survey['enabled_languages']['available'], [$this->survey['enabled_languages']['default']]));
+
+        $languagesIntersection = LanguageQuestion::filterEnabledLanguages($surveyLanguages);
+
+        $languages = empty($languagesIntersection) ? $surveyLanguages : $languagesIntersection;
+
+        if (count($languages) === 1) {
+            $this->setLanguage($languages[0]);
+            return $this->showSurveyInformation();
+        }
         $questionScreen = new QuestionScreen(new LanguageQuestion($surveyLanguages));
 
         $this->ask($questionScreen, $this->getSurveyLanguageHandler($questionScreen));
@@ -323,7 +341,7 @@ class SurveyConversation extends Conversation
             try {
                 $questionScreen->setAnswer($answer);
 
-                if (! $questionScreen->isDone()) {
+                if (!$questionScreen->isDone()) {
                     if ($questionScreen->validationFailed()) {
                         $questionScreen->dontRepeatAgain();
                     }
@@ -339,8 +357,8 @@ class SurveyConversation extends Conversation
                     return $this->askCancelOrGoToListOfSurveys();
                 }
 
-                $this->selectedLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
-                App::setLocale($this->selectedLanguage);
+                $chosenLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
+                $this->setLanguage($chosenLanguage);
                 $this->showSurveyInformation();
             } catch (\Throwable $exception) {
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -377,7 +395,7 @@ class SurveyConversation extends Conversation
             try {
                 $messageScreen->setAnswer($answer);
 
-                if (! $messageScreen->isDone()) {
+                if (!$messageScreen->isDone()) {
                     return $this->ask($messageScreen, $this->getShowSurveyInformationHandler($messageScreen));
                 }
 
@@ -549,10 +567,10 @@ class SurveyConversation extends Conversation
             try {
                 $questionScreen->setAnswer($answer);
 
-                if (! $questionScreen->isDone()) {
+                if (!$questionScreen->isDone()) {
                     return $this->ask($questionScreen, $this->getFieldHandler($questionScreen));
                 }
-              
+
                 if ($questionScreen->wasCanceled()) {
                     return $this->handleCancelAfterSurveySelection();
                 }
@@ -571,7 +589,7 @@ class SurveyConversation extends Conversation
                     $this->askNextField();
                 }
             } catch (\Throwable $exception) {
-                Log::error('Error while asking field:'.$exception->getMessage(), ['question-screen' => $questionScreen]);
+                Log::error('Error while asking field:' . $exception->getMessage(), ['question-screen' => $questionScreen]);
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         };
@@ -620,7 +638,7 @@ class SurveyConversation extends Conversation
             try {
                 $questionScreen->setAnswer($answer);
 
-                if (! $questionScreen->isDone()) {
+                if (!$questionScreen->isDone()) {
                     return $this->ask($questionScreen, $this->getCallbackHandler($questionScreen));
                 }
 
@@ -628,7 +646,7 @@ class SurveyConversation extends Conversation
 
                 return call_user_func([$this, $callback]);
             } catch (\Throwable $exception) {
-                Log::error('Error while asking interaction language:'.$exception->getMessage());
+                Log::error('Error while asking interaction language:' . $exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
             }
         };
@@ -668,11 +686,11 @@ class SurveyConversation extends Conversation
             try {
                 $screen->setAnswer($answer);
 
-                if (! $screen->isDone()) {
+                if (!$screen->isDone()) {
                     return $this->ask($screen, $this->getEndingMessageHandler($screen));
                 }
             } catch (\Throwable $exception) {
-                Log::error('Error while sending ending message:'.$exception->getMessage());
+                Log::error('Error while sending ending message:' . $exception->getMessage());
             }
         };
     }
@@ -702,7 +720,7 @@ class SurveyConversation extends Conversation
         try {
             $this->sdk->createPost($post);
         } catch (\Throwable $ex) {
-            Log::error("Couldn't save post: ".$ex->getMessage(), ['post' => $post]);
+            Log::error("Couldn't save post: " . $ex->getMessage(), ['post' => $post]);
             throw $ex;
         }
     }
@@ -715,15 +733,15 @@ class SurveyConversation extends Conversation
     public function shouldAskSurveyLanguage(): bool
     {
         // don't ask survey lang if survey doesn't have enabled languages
-        if (! isset($this->survey['enabled_languages'])) {
+        if (!isset($this->survey['enabled_languages'])) {
             return false;
         }
 
-        $hasDefaultLanguage = isset($this->survey['enabled_languages']['default']) && ! empty($this->survey['enabled_languages']['default']);
-        $hasAvailableLanguages = isset($this->survey['enabled_languages']['available']) && ! empty(array_filter($this->survey['enabled_languages']['available']));
+        $hasDefaultLanguage = isset($this->survey['enabled_languages']['default']) && !empty($this->survey['enabled_languages']['default']);
+        $hasAvailableLanguages = isset($this->survey['enabled_languages']['available']) && !empty(array_filter($this->survey['enabled_languages']['available']));
 
         // if the survey doesn't have a default language or doesn't have available languages neither, don't ask for survey language
-        if (! ($hasDefaultLanguage || $hasAvailableLanguages)) {
+        if (!($hasDefaultLanguage || $hasAvailableLanguages)) {
             return false;
         }
 
@@ -750,5 +768,11 @@ class SurveyConversation extends Conversation
     public function handleCancelAfterSurveySelection()
     {
         $this->askSurvey();
+    }
+
+    public function setLanguage(string $language)
+    {
+        $this->selectedLanguage = $language;
+        App::setLocale($language);
     }
 }
