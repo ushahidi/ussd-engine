@@ -14,10 +14,10 @@ class LanguageQuestion extends SelectQuestion
     public function __construct(array $availableLanguages)
     {
         $field = [
-          'label' => __('conversation.chooseALanguage'),
-          'key' => 'language',
-          'required' => true,
-          'options' => $availableLanguages,
+            'label' => __('conversation.chooseALanguage'),
+            'key' => 'language',
+            'required' => true,
+            'options' => $availableLanguages,
         ];
         parent::__construct($field);
     }
@@ -28,5 +28,11 @@ class LanguageQuestion extends SelectQuestion
     public function getAttributeName(): string
     {
         return 'language';
+    }
+
+    public static function filterEnabledLanguages(array $languages): array
+    {
+        $enabledLanguages = config('settings.enabled_languages', []);
+        return array_values(array_intersect($languages, $enabledLanguages));
     }
 }
