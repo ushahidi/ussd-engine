@@ -26,7 +26,7 @@ Please check the official Laravel [installation guide](https://laravel.com/docs/
 
 Clone the repository
 
-    git clone git@github.com:ushahidi/ussd-engine.git
+    git clone https://github.com/ushahidi/ussd-engine.git
 
 Switch to the repo folder
 
@@ -52,7 +52,7 @@ You can now access the server at http://localhost:8000
 
 **TL;DR command list**
 
-    git clone git@github.com:ushahidi/ussd-engine.git
+    git clone https://github.com/ushahidi/ussd-engine.git
     cd ussd-engine
     composer install
     cp .env.example .env
