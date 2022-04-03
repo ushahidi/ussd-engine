@@ -7,6 +7,10 @@ services:
     environment:
       DOCKERIZE_WAIT_FOR_redis: tcp://redis:6379
       REDIS_HOST: redis
+      USHAHIDI_PLATFORM_API_URL: "http://192.168.88.184"
+      USHAHIDI_PLATFORM_API_VERSION: "5"
     command: start
     ports:
-      - "80:8080"
+      - "8088:8080"
+    volumes:
+      - ./settings.json:/var/www/settings.json

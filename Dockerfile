@@ -1,4 +1,4 @@
-FROM ushahidi/php-fpm-nginx:php-7.2
+FROM ushahidi/php-fpm-nginx:php-7.4
 
 WORKDIR /var/www
 ADD composer.* ./
