@@ -101,7 +101,9 @@ class SurveyConversation extends Conversation
     public function run()
     {
         try {
-            $surveys = $this->getAvailableSurveys();
+            $availableSurveys = $this->getAvailableSurveys();
+            $enabledSurveys = SurveyQuestion::filterEnabledSurveys($availableSurveys);
+            $surveys = count($enabledSurveys) > 0 ? $enabledSurveys : $availableSurveys;
             $this->surveys = Collection::make($surveys);
             $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
@@ -204,7 +206,7 @@ class SurveyConversation extends Conversation
             ->all();
 
         if (empty($availableLanguagesList)) {
-            return $this->askSurvey();
+            return $this->askWhichSurvey();
         }
 
         $languagesIntersection = LanguageQuestion::filterEnabledLanguages($availableLanguagesList);
@@ -252,7 +254,7 @@ class SurveyConversation extends Conversation
 
                 $chosenLanguage = $questionScreen->getQuestion()->getValidatedAnswerValue();
                 $this->setLanguage($chosenLanguage);
-                $this->askSurvey();
+                $this->askWhichSurvey();
             } catch (\Throwable $exception) {
                 Log::error('Error while asking interaction language:' . $exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -265,14 +267,26 @@ class SurveyConversation extends Conversation
      *
      * @return void
      */
-    protected function askSurvey()
+    protected function askWhichSurvey()
     {
-        $question = new SurveyQuestion($this->surveys->all());
+        $allSurveys = $this->surveys->all();
+
+        if (count($allSurveys) === 1) {
+            $survey = $allSurveys[0];
+            return $this->setSurveyAndContinue($survey['id']);
+        }
+
+        $question = new SurveyQuestion($allSurveys);
         $questionScreen = new QuestionScreen($question);
 
         $this->ask($questionScreen, $this->getSurveyHandler($questionScreen));
     }
 
+    protected function setSurveyAndContinue(string $surveyId): void
+    {
+        $this->setSurvey($this->getSurvey($surveyId));
+        $this->askSurveyLanguage();
+    }
     /**
      * Returns a callback able to handle the user interaction with the
      * survey question specifically.
@@ -293,9 +307,8 @@ class SurveyConversation extends Conversation
                     return $this->handleCancelBeforeSurveySelection();
                 }
 
-                $selectedSurvey = $questionScreen->getQuestion()->getValidatedAnswerValue();
-                $this->setSurvey($this->getSurvey($selectedSurvey));
-                $this->askSurveyLanguage();
+                $selectedSurveyId = $questionScreen->getQuestion()->getValidatedAnswerValue();
+                $this->setSurveyAndContinue($selectedSurveyId);
             } catch (\Throwable $exception) {
                 Log::error('Error while asking survey:' . $exception->getMessage());
                 $this->sendEndingMessage(__('conversation.oops'));
@@ -769,7 +782,7 @@ class SurveyConversation extends Conversation
 
     public function handleCancelAfterSurveySelection()
     {
-        $this->askSurvey();
+        $this->askWhichSurvey();
     }
 
     public function setLanguage(string $language)
