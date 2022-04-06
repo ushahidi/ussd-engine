@@ -33,8 +33,8 @@ Switch to the repo folder
     cd ussd-engine
 
 Install all the dependencies using composer
-
-    composer install
+    `composer update`
+    `composer install`
 
 Copy the example env file and make the required configuration changes in the .env file
 
@@ -54,6 +54,7 @@ You can now access the server at http://localhost:8000
 
     git clone git@github.com:ushahidi/ussd-engine.git
     cd ussd-engine
+    composer update
     composer install
     cp .env.example .env
     php artisan key:generate
