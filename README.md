@@ -33,8 +33,11 @@ Switch to the repo folder
     cd ussd-engine
 
 Install all the dependencies using composer
-    `composer update`
-    `composer install`
+    
+    composer update
+    
+    composer install
+    
 
 Copy the example env file and make the required configuration changes in the .env file
 
