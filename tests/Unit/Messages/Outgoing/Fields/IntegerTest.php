@@ -43,7 +43,7 @@ class IntegerTest extends TestCase
         try {
             $this->integerQuestion->setAnswer($this->answer);
         } catch (\Throwable $ex) {
-            $this->assertValidationError('must be an integer', $ex);
+            $this->assertValidationError('is not a valid integer', $ex);
 
             return;
         }

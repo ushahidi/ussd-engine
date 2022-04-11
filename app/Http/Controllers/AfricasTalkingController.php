@@ -25,13 +25,21 @@ class AfricasTalkingController extends Controller
          * the conversation is started all incoming messages are handled from there.
          */
         $botman->fallback(function ($bot) {
-            $bot->startConversation(new SurveyConversation());
+            $convo = new SurveyConversation();
+
+            // Store the user's phone number
+            $from = $bot->getMessage()->getPayload()['userId'] ?? '+0000000';
+            $convo->setUserId($from);
+            
+            // Kick off the conversaition
+            $bot->startConversation($convo);
         });
 
         try {
             $botman->listen();
         } catch (\Exception $e) {
             Log::error($e->getMessage());
+            report($e);
             $botman->reply('Something went wrong.');
         }
     }

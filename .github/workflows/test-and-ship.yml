@@ -15,8 +15,7 @@ jobs:
     strategy:
       matrix:
         php_version:
-          - 7.2
-          - 7.3
+          - 7.4
 
     steps:
     - uses: actions/checkout@v2
@@ -25,7 +24,7 @@ jobs:
       uses: shivammathur/setup-php@master
       with:
         php-version: ${{ matrix.php_version }}
-        tools: composer:1.10.19
+        tools: composer:2.3.0
         
     - name: Get Composer Cache Directory
       id: composer-cache

@@ -5752,12 +5752,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ushahidi/platform-sdk-php.git",
-                "reference": "9e1b4c6027a2496bdac1e89f5d109d9ddb868901"
+                "reference": "0bec377a528916246cfdddef361a5c7a4a98b5ad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/9e1b4c6027a2496bdac1e89f5d109d9ddb868901",
-                "reference": "9e1b4c6027a2496bdac1e89f5d109d9ddb868901",
+                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/0bec377a528916246cfdddef361a5c7a4a98b5ad",
+                "reference": "0bec377a528916246cfdddef361a5c7a4a98b5ad",
                 "shasum": ""
             },
             "require": {
@@ -5781,10 +5781,10 @@
             ],
             "description": "An SDK for the v5+ Ushahidi Platform",
             "support": {
-                "source": "https://github.com/ushahidi/platform-sdk-php/tree/v0.1",
+                "source": "https://github.com/ushahidi/platform-sdk-php/tree/v0.1.1",
                 "issues": "https://github.com/ushahidi/platform-sdk-php/issues"
             },
-            "time": "2020-09-03T12:11:51+00:00"
+            "time": "2022-04-03T04:55:14+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
