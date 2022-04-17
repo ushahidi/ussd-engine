@@ -592,9 +592,15 @@ class SurveyConversation extends Conversation
     private function askField(array $field)
     {
         $question = FieldQuestionFactory::create($field);
-        $questionScreen = new QuestionScreen($question);
 
-        $this->ask($questionScreen, $this->getFieldHandler($questionScreen));
+        // If the question should be skipped (because it has a pre-defined answer) add the answer and continue
+        if ($question->getSkipQuestion()) {
+            $this->answers[] = $question->toPayload();
+            $this->askNextField();
+        } else {
+            $questionScreen = new QuestionScreen($question);
+            $this->ask($questionScreen, $this->getFieldHandler($questionScreen));
+        }
     }
 
     /**
