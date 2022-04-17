@@ -18,12 +18,39 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      */
     protected $field;
 
+    protected $defaultAnswerValue;
+
     protected $answerValue;
+
+    protected $skipQuestion;
+
 
     public function __construct(array $field)
     {
         $this->field = $field;
+        $this->defaultAnswerValue = null;
+        $this->skipQuestion = false;
         parent::__construct($this->getTextContent());
+    }
+
+    public function setDefaultAnswerValue(string $defaultAnswerValue) {
+        $this->defaultAnswerValue = $defaultAnswerValue;
+    }
+
+    public function setSkipQuestion(bool $skip)
+    {
+        $this->skipQuestion = $skip;
+        if ($skip) {
+            if ($this->defaultAnswerValue == null) {
+                throw new UnexpectedValueException("Requested to skip question without having set a default answer");
+            }
+            $this->setAnswer(Answer::create($this->defaultAnswerValue));
+        }
+    }
+
+    public function getSkipQuestion(): bool
+    {
+        return $this->skipQuestion;
     }
 
     /**

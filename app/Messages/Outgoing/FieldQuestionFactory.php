@@ -21,13 +21,70 @@ use App\Messages\Outgoing\GeoLocation;
 
 class FieldQuestionFactory
 {
+
+    protected static function isTitleField(array $field): bool
+    {
+        return $field['input'] == 'text' && $field['type'] == 'title';
+    }
+
+    protected static function isDescriptionField(array $field): bool
+    {
+        return $field['input'] == 'text' && $field['type'] == 'description';
+    }
+
+    protected static function getFieldDefault(array $field)
+    {
+        if (!$field['default']) {
+            return null;
+        }
+
+        if (self::isTitleField($field)) {
+            $setting = config('settings.when_default_values.title');
+        } elseif (self::isDescriptionField($field)) {
+            $setting = config('settings.when_default_values.description');
+        } else {
+            /* TODO: handling of default values for other fields disabled.
+             *       Before enabling, it's necessary to check that this 
+             *       works well with data types other than text.
+             */
+            // $setting = config('settings.when_default_values.other');
+            $setting = 'ignore';
+        }
+
+        if ($setting == 'ignore') {
+            return null;
+        }
+
+        return [
+            'value' => $field['default'],
+            'setting' => $setting       # 'skip' or 'use'
+        ];
+    }
+
     public static function create(array $field): FieldQuestion
     {
+        $defaultsSetting = self::getFieldDefault($field);
+
+        $field = self::createField($field);
+
+        if ($defaultsSetting && $defaultsSetting['value']) {
+            $field->setDefaultAnswerValue($defaultsSetting['value']);
+
+            if ($defaultsSetting['setting'] == 'skip') {
+                $field->setSkipQuestion(true);
+            }
+        }
+
+        return $field;
+    }   
+
+    protected static function createField(array $field): FieldQuestion
+    {
         switch ($field) {
-            case $field['input'] == 'text' && $field['type'] == 'title':
+            case self::isTitleField($field):
                 return new Title($field);
                 break;
-            case $field['input'] == 'text' && $field['type'] == 'description':
+            case self::isDescriptionField($field):
                 return new Description($field);
                 break;
             case $field['input'] == 'text' && $field['type'] == 'varchar':
@@ -77,4 +134,5 @@ class FieldQuestionFactory
                 break;
         }
     }
+
 }

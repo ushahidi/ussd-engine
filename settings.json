@@ -1,4 +1,8 @@
 {
     "enabled_languages": [],
-    "enabled_surveys": []
+    "enabled_surveys": [],
+    "when_default_values": {
+      "title": "ignore",
+      "description": "ignore"
+    }
 }
