@@ -5,6 +5,8 @@ ADD composer.* ./
 RUN composer install --no-autoloader --no-scripts
 
 COPY . .
+RUN touch storage/logs/laravel.log && \
+    chown www-data:www-data storage/logs/laravel.log
 
 COPY docker/run.sh /run.sh
 RUN $DOCKERCES_MANAGE_UTIL add /run.sh
