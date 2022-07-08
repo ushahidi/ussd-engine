@@ -101,6 +101,26 @@ Some important environment variables are:
 - `USHAHIDI_PLATFORM_API_TIMEOUT`:  Depending on your setup, you may want to set a custom timeout for requests to the Ushahidi Platform. It defaults to 2 seconds.
 - `USSD_MAX_CHARACTERS_PER_PAGE`: USSD messages are limited to a fixed amount of characters depending on the telecommunications service provider. This allows to paginate the content delivered to your users. It defaults to 160 characters.
 
+## Custom language strings
+If you would like to change any of the strings used by the bot, you may do so by providing a `lang_strings.json` file in the root of the project. The json file should have a key for each locale, and inside each locale a dictionary of keys to text. The keys would match the laravel structure of group.entry . For example:
+
+```
+{
+  "en": {
+    "conversation.selectSurvey": "Choose your adventure",
+    "conversation.thanksForSubmitting": "Good job!"
+  },
+  "es": {
+    "conversation.selectSurvey": "Elija su aventura",
+    "conversation.thanksForSubmitting": "¡Buen trabajo!"
+  }    
+}
+```
+
+This file would override the `selectSurvey` and `thanksforSubmitting` translations present in the [resources/lang/en/conversation.php](./resources/lang/en/conversation.php) and [resources/lang/es/conversation.php](./resources/lang/es/conversation.php) files.
+
+The file is loaded by the [CustomLangStringsProvider](./app/Providers/CustomLangStringsProvider.php) service.
+
 ## TODO
  - API Specification
  - Testing
