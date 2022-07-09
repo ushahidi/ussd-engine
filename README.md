@@ -101,6 +101,12 @@ Some important environment variables are:
 - `USHAHIDI_PLATFORM_API_TIMEOUT`:  Depending on your setup, you may want to set a custom timeout for requests to the Ushahidi Platform. It defaults to 2 seconds.
 - `USSD_MAX_CHARACTERS_PER_PAGE`: USSD messages are limited to a fixed amount of characters depending on the telecommunications service provider. This allows to paginate the content delivered to your users. It defaults to 160 characters.
 
+## Settings file
+
+The code checks for a settings.json file in the root of the project. Through this file it's possible to tweak some of the bot's handling of aspects such as default field values, or limiting which surveys are offered to users.
+
+Further references on the settings that can be set may be found in [settings.php](./config/settings.php)
+
 ## Custom language strings
 If you would like to change any of the strings used by the bot, you may do so by providing a `lang_strings.json` file in the root of the project. The json file should have a key for each locale, and inside each locale a dictionary of keys to text. The keys would match the laravel structure of group.entry . For example:
 
