@@ -2,6 +2,9 @@
 
 namespace App\Providers\BotMan;
 
+use App\Drivers\AfricasTalkingDriver;
+use App\Drivers\WhatsAppDriver;
+
 use BotMan\BotMan\Drivers\DriverManager;
 use BotMan\Studio\Providers\DriverServiceProvider as ServiceProvider;
 
@@ -13,7 +16,10 @@ class DriverServiceProvider extends ServiceProvider
      *
      * @var array
      */
-    protected $drivers = [];
+    protected $drivers = [
+        AfricasTalkingDriver::class,
+        WhatsAppDriver::class
+    ];
 
     /**
      * @return void

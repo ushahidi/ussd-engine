@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Conversations\ExampleConversation;
+use App\Conversations\SurveyConversation;
 use BotMan\BotMan\BotMan;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * This controller allows to interact with Botman for testing purposes.
@@ -16,7 +16,21 @@ class BotManController extends Controller
      */
     public function handle()
     {
+        Log::debug('BotManController.handle');
+
         $botman = app('botman');
+
+        /* Testing greeting reactions */
+        $botman->hears('hear hear', function ($bot) {
+            Log::debug('BotManController.handle: hear hear fired');
+            $bot->reply('Orrrderrrr!');
+        });
+
+        /* Defaults to kick off the survey conversation */
+        $botman->fallback(function ($bot) {
+            Log::debug('BotManController.handle: fallback fired');
+            $this->startConversation($bot);
+        });
 
         $botman->listen();
     }
@@ -35,6 +49,6 @@ class BotManController extends Controller
      */
     public function startConversation(BotMan $bot)
     {
-        $bot->startConversation(new ExampleConversation());
+        $bot->startConversation(new SurveyConversation());
     }
 }
