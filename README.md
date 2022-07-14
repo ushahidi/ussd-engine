@@ -107,6 +107,25 @@ The code checks for a settings.json file in the root of the project. Through thi
 
 Further references on the settings that can be set may be found in [settings.php](./config/settings.php)
 
+## Custom language strings
+If you would like to change any of the strings used by the bot, you may do so by providing a `lang_strings.json` file in the root of the project. The json file should have a key for each locale, and inside each locale a dictionary of keys to text. The keys would match the laravel structure of group.entry . For example:
+
+```
+{
+  "en": {
+    "conversation.selectSurvey": "Choose your adventure",
+    "conversation.thanksForSubmitting": "Good job!"
+  },
+  "es": {
+    "conversation.selectSurvey": "Elija su aventura",
+    "conversation.thanksForSubmitting": "¡Buen trabajo!"
+  }    
+}
+```
+
+This file would override the `selectSurvey` and `thanksforSubmitting` translations present in the [resources/lang/en/conversation.php](./resources/lang/en/conversation.php) and [resources/lang/es/conversation.php](./resources/lang/es/conversation.php) files.
+
+The file is loaded by the [CustomLangStringsProvider](./app/Providers/CustomLangStringsProvider.php) service.
 
 ## TODO
  - API Specification
