@@ -90,7 +90,7 @@ class SurveyConversation extends Conversation
      * Flag for skipping the survey selection confirmation dialog.
      * @var string
      */
-    protected $skipSurveyConfirmation = false;
+    protected $skipSurveyConfirmation;
 
     public function __construct()
     {
@@ -114,9 +114,21 @@ class SurveyConversation extends Conversation
         try {
             $availableSurveys = $this->getAvailableSurveys();
             $enabledSurveys = SurveyQuestion::filterEnabledSurveys($availableSurveys);
+            
             // If no surveys left after filtering, reset to offer all the available surveys
             $surveys = count($enabledSurveys) > 0 ? $enabledSurveys : $availableSurveys;
             $this->surveys = Collection::make($surveys);
+
+            // Conditionally set up to skip some questions
+            if (count($this->surveys->all()) === 1) {
+                // With only one active survey we can skip survey choice confirmation
+                $this->skipSurveyConfirmation = true;
+            } else {
+                // Ask survey choice confirmation according to configuration
+                $this->skipSurveyConfirmation = !((bool) config('settings.confirm_survey_selection'));
+            }
+
+            // Start with the first question
             $this->askInteractionLanguage();
         } catch (\Throwable $exception) {
             Log::error('Could not fetch available surveys:' . $exception->getMessage());

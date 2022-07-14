@@ -56,6 +56,17 @@ class AfricasTalkingDriver extends WebDriver
         return $message;
     }
 
+    protected function outgoingTextFilter($text)
+    {
+        /* Some phone service providers don't like full UTF-8 pumping through
+         * their systems. Here we try to clean the most often found offenders.
+         */
+        return str_replace(
+            ["‘","’","“","”"], ["'", "'",'"','"'],  // curly quotes, single quotes
+            $text
+        );
+    }
+
     /**
      * Take all the outgoing messages and build a reply understandable by
      * Africa's Talking USSD gateway.
@@ -73,7 +84,7 @@ class AfricasTalkingDriver extends WebDriver
 
         foreach ($messages as $message) {
             if ($message instanceof OutgoingMessage || $message instanceof Question) {
-                $replies[] = $message->getText();
+                $replies[] = $this->outgoingTextFilter($message->getText());
             }
 
             if ($message instanceof LastScreen && ! $message->getCurrentPage()->hasNext()) {
