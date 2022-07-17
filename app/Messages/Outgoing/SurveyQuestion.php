@@ -39,6 +39,9 @@ class SurveyQuestion extends SelectQuestion
 
         $filteredSurveys = array_filter($surveys, fn ($survey) => in_array($survey['id'], $enabledSurveysIds));
 
+        // Reset array indices, as the array index determines the number of the option the user needs to type in
+        $filteredSurveys = array_values($filteredSurveys);
+
         if (count($enabledSurveys) > 0 && count($filteredSurveys) === 0) {
             Log::warning('Surveys could not be filtered as expected.', ['enabledSurveys' => $enabledSurveys, 'surveysToFilter' => $surveys]);
         }

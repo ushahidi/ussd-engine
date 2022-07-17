@@ -241,7 +241,9 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
      */
     public function shouldShowHintsByDefault(): bool
     {
-        return false;
+        /* Provide as configured in the settings */
+        $attr_name = $this->getAttributeName();
+        return config("settings.ussd.show_hints_for_field_type.$attr_name") ?? false;
     }
 
     /**
