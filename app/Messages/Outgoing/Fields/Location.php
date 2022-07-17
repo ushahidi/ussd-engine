@@ -76,11 +76,6 @@ class Location extends TextQuestion
         return $location;
     }
 
-    public function shouldShowHintsByDefault(): bool
-    {
-        return true;
-    }
-
     /**
      * Used to know if this question has hints to show.
      *

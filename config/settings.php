@@ -23,6 +23,34 @@ $default_settings = [
         "description" => "ignore",
         "other" => "ignore"   # TODO: not implemented for now, see FieldQuestionFactory class to enable
     ],
+
+    # Send question for survey selection confirmation
+    "confirm_survey_selection" => true,
+
+    # USSD-specific settings
+    "ussd" => [
+        # Should we show hints for specific field types.
+        # The keys for this array match the values returned by the
+        # getAtributeName() method in the different App\Messages\Outgoing\Fields questions
+        "show_hints_for_field_type" => [
+            "categories" => false,
+            "checkboxes" => true,
+            "date" => true,
+            "datetime" => true,
+            "decimal" => false,
+            "description" => false,
+            "image" => false,
+            "integer" => false,
+            "location" => true,
+            "long text" => false,
+            "markdown" => false,
+            "radio buttons" => false,
+            "select" => false,
+            "short text" => false,
+            "title" => false,
+            "video" => false,
+        ],
+    ],
 ];
 
 if (file_exists(base_path('settings.json'))) {

@@ -19,12 +19,7 @@ class Date extends TextQuestion
 
         return $rules;
     }
-
-    public function shouldShowHintsByDefault(): bool
-    {
-        return true;
-    }
-
+    
     public function hasHints(): bool
     {
         return true;
