@@ -5,6 +5,7 @@ ADD composer.* ./
 RUN composer install --no-autoloader --no-scripts
 
 COPY . .
+COPY docker/run.tasks.conf /etc/chaperone.d/
 RUN touch storage/logs/laravel.log && \
     chown www-data:www-data storage/logs/laravel.log
 
