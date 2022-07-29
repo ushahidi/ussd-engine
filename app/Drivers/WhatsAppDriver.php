@@ -85,7 +85,7 @@ class WhatsAppDriver extends HttpDriver implements VerifiesService
      *
      * @return bool
      */
-    public function matchesRequest()
+    public function matchesRequest(): bool
     {
         // TODO: Validating Payload's signature
         if (isset($this->entries) && !is_null($this->entries)) {

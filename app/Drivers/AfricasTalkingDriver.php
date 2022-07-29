@@ -17,6 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AfricasTalkingDriver extends WebDriver
 {
+
+    const DRIVER_NAME = 'AfricasTalkingUSSD';
+
     /**
      * Build payload from incoming request.
      * @param Request $request
@@ -26,15 +29,17 @@ class AfricasTalkingDriver extends WebDriver
         $data = $request->request->all();
 
         $payload = [
-            'driver' => 'web',
+            'driver' => self::DRIVER_NAME,
             'message' => isset($data['text']) ? $this->splitMessage($data['text']) : null,
             'userId' =>  isset($data['phoneNumber']) ? $data['phoneNumber'] : null,
         ];
 
-        $this->payload = $payload;
-        $this->event = Collection::make(array_merge($data, $payload));
-        $this->files = Collection::make($request->files->all());
-        $this->config = Collection::make($this->config->get('web', []));
+        // $this->payload = $payload;
+        $this->event = Collection::make(array_merge(
+            $data,
+            $payload,
+            [ 'headers' => $request->headers ]));
+        $this->config = Collection::make($this->config->get('ussd', []));
     }
 
     /**
@@ -123,9 +128,11 @@ class AfricasTalkingDriver extends WebDriver
      */
     public function matchesRequest(): bool
     {
-        $africasTalkingKeys = ['sessionId', 'phoneNumber', 'networkCode', 'serviceCode', 'text'];
+        if (strpos($this->event->get('headers')->get('user-agent'), 'at-ussd-api') !== 0)
+            return false;
 
-        foreach ($africasTalkingKeys as $key) {
+        $eventKeys = ['sessionId', 'phoneNumber', 'networkCode', 'serviceCode'];
+        foreach ($eventKeys as $key) {
             if (is_null($this->event->get($key))) {
                 return false;
             }
