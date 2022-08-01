@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 abstract class FieldQuestion extends Question implements FieldQuestionInterface
 {
@@ -24,6 +25,10 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
 
     protected $skipQuestion;
 
+    protected $driverFormat;
+
+    protected $driverProtocol;
+
 
     public function __construct(array $field)
     {
@@ -31,6 +36,12 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         $this->defaultAnswerValue = null;
         $this->skipQuestion = false;
         parent::__construct($this->getTextContent());
+    }
+
+    public function setDriverInfo(string $driverFormat, string $driverProtocol)
+    {
+        $this->driverFormat = $driverFormat;
+        $this->driverProtocol = $driverProtocol;
     }
 
     public function setDefaultAnswerValue(string $defaultAnswerValue) {
@@ -232,6 +243,23 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     public function getValidatedAnswerValue()
     {
         return $this->answerValue;
+    }
+
+    public function isFieldTypeEnabled()
+    {
+        if (!$this->driverFormat) {
+            return true;
+        }
+
+        $attr_name = $this->getAttributeName();
+        $settingName = "settings.{$this->driverFormat}.is_disabled_field_type.$attr_name";
+        $setting = config($settingName);
+
+        if ($setting == true) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**

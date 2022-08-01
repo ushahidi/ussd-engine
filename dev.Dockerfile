@@ -1,4 +1,4 @@
-FROM ushahidi/php-fpm-nginx:php-7.4
+FROM ushahidi/php-fpm-nginx:php-7.4-debug
 
 WORKDIR /var/www
 ADD composer.* ./
@@ -17,3 +17,9 @@ ENV VHOST_ROOT=/var/www/public \
     PHP_EXEC_TIME_LIMIT=60 \
     ENABLE_NGINX=true \
     ENABLE_PHPFPM=true
+
+ENV PHPFPM_PM_MAX_CHILDREN=1 \
+    PHPFPM_PM_START_SERVERS=1 \
+    PHPFPM_PM_MIN_SPARE_SERVERS=1 \
+    PHPFPM_PM_MAX_SPARE_SERVERS=1 \
+    XDEBUG_SESSION=ussd-engine

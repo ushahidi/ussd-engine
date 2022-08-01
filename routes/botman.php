@@ -1,18 +1,23 @@
 <?php
 
-use App\Conversations\SurveyConversation;
-use App\Drivers\AfricasTalkingDriver;
-use BotMan\BotMan\Drivers\DriverManager;
+/* (from @davidlosada)
+ * I believe these should have been removed when we switched to
+ * Botman Studio
+ */
 
-DriverManager::loadDriver(AfricasTalkingDriver::class);
+// use App\Conversations\SurveyConversation;
+// use App\Drivers\AfricasTalkingDriver;
+// use BotMan\BotMan\Drivers\DriverManager;
 
-// Botman commands for testing
-$botman = resolve('botman');
+// DriverManager::loadDriver(AfricasTalkingDriver::class);
 
-$botman->hears('Hi', function ($bot) {
-    $bot->reply('Hello!');
-});
+// // Botman commands for testing
+// $botman = resolve('botman');
 
-$botman->hears('survey', function ($bot) {
-    $bot->startConversation(new SurveyConversation());
-});
+// $botman->hears('Hi', function ($bot) {
+//     $bot->reply('Hello!');
+// });
+
+// $botman->hears('survey', function ($bot) {
+//     $bot->startConversation(new SurveyConversation());
+// });
