@@ -61,11 +61,12 @@ class FieldQuestionFactory
         ];
     }
 
-    public static function create(array $field): FieldQuestion
+    public static function create(array $field, string $driverFormat = null, string $driverProtocol = null): FieldQuestion
     {
         $defaultsSetting = self::getFieldDefault($field);
 
         $field = self::createField($field);
+        $field->setDriverInfo($driverFormat, $driverProtocol);
 
         if ($defaultsSetting && $defaultsSetting['value']) {
             $field->setDefaultAnswerValue($defaultsSetting['value']);

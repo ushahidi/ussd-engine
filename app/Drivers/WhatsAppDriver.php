@@ -2,6 +2,7 @@
 
 namespace App\Drivers;
 
+use App\Drivers\Traits\DriverClassificationInfo;
 use App\Drivers\Exceptions\WhatsAppConnectionException;
 
 use BotMan\BotMan\Drivers\HttpDriver;
@@ -27,6 +28,11 @@ use Symfony\Component\HttpFoundation\Response;
 class WhatsAppDriver extends HttpDriver implements VerifiesService
 {
     const DRIVER_NAME = 'WhatsApp';
+
+    use DriverClassificationInfo;
+
+    protected $messageFormat = 'messaging';
+    protected $driverProtocol = 'whatsapp';
 
     /**
      * @var array

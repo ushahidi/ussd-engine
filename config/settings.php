@@ -50,6 +50,13 @@ $default_settings = [
             "title" => false,
             "video" => false,
         ],
+
+        # Disable field types for user input via USSD?
+        "is_disabled_field_type" => [
+            "image" => true,
+            "location" => true,
+            "video" => true,
+        ],
     ],
 ];
 

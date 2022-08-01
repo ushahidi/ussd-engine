@@ -2,6 +2,8 @@
 
 namespace App\Drivers;
 
+use App\Drivers\Traits\DriverClassificationInfo;
+
 use App\Messages\Outgoing\LastScreen;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
@@ -19,6 +21,11 @@ class AfricasTalkingDriver extends WebDriver
 {
 
     const DRIVER_NAME = 'AfricasTalkingUSSD';
+
+    use DriverClassificationInfo;
+
+    protected $messageFormat = 'ussd';
+    protected $driverProtocol = 'ussd';
 
     /**
      * Build payload from incoming request.

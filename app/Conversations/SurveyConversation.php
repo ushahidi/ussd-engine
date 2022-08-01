@@ -87,6 +87,14 @@ class SurveyConversation extends Conversation
     protected $selectedLanguage;
 
     /**
+     * Characteristics of the driver this conversation is
+     * being carried through. These help determine how to
+     * render questions and process answers.
+     */
+    protected $driverFormat;
+    protected $driverProtocol;
+
+    /**
      * Flag for skipping the survey selection confirmation dialog.
      * @var string
      */
@@ -112,6 +120,15 @@ class SurveyConversation extends Conversation
     public function run()
     {
         try {
+            if (method_exists($this->bot->getDriver(), 'getDriverMessageFormat')) {
+                $this->driverFormat = $this->bot->getDriver()->getDriverMessageFormat();
+                $this->driverProtocol = $this->bot->getDriver()->getDriverProtocol();
+            } else {
+                /* Defaulting to ussd */
+                $this->driverFormat = 'ussd';
+                $this->driverProtocol = 'ussd';
+            }
+
             $availableSurveys = $this->getAvailableSurveys();
             $enabledSurveys = SurveyQuestion::filterEnabledSurveys($availableSurveys);
             
@@ -603,10 +620,10 @@ class SurveyConversation extends Conversation
      */
     private function askField(array $field)
     {
-        $question = FieldQuestionFactory::create($field);
+        $question = FieldQuestionFactory::create($field, $this->driverFormat, $this->driverProtocol);
 
         // If the question should be skipped (because it has a pre-defined answer) add the answer and continue
-        if ($question->getSkipQuestion()) {
+        if ($question->getSkipQuestion() || !$question->isFieldTypeEnabled()) {
             $this->answers[] = $question->toPayload();
             $this->askNextField();
         } else {
