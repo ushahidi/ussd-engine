@@ -94,7 +94,7 @@ class WhatsAppDriver extends HttpDriver implements VerifiesService
     public function matchesRequest(): bool
     {
         // TODO: Validating Payload's signature
-        if (isset($this->entries) && !is_null($this->entries)) {
+        if (isset($this->eventMessages) && !is_null($this->eventMessages) && count($this->eventMessages) > 0) {
             Log::debug('WhatsAppDriver.matchesRequest: true');
             return true;
         } else {
@@ -163,14 +163,15 @@ class WhatsAppDriver extends HttpDriver implements VerifiesService
      */
     public function getUser(IncomingMessage $matchingMessage)
     {
-        $contact = Collection::make($matchingMessage->getPayload()->get('contacts')[0]);
-        return new User(
-            $contact->get('wa_id'),
-            $contact->get('profile')['name'],
-            null,
-            $contact->get('wa_id'),
-            $contact
-        );
+        return new User($matchingMessage->getSender());
+        // $contact = Collection::make($matchingMessage->getPayload()->get('contacts')[0]);
+        // return new User(
+        //     $contact->get('wa_id'),
+        //     $contact->get('profile')['name'],
+        //     null,
+        //     $contact->get('wa_id'),
+        //     $contact
+        // );
     }
 
     /**

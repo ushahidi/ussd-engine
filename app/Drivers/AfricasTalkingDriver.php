@@ -49,6 +49,11 @@ class AfricasTalkingDriver extends WebDriver
         $this->config = Collection::make($this->config->get('ussd', []));
     }
 
+    public function getMaxCharactersPerPage()
+    {
+        return (int) config('ussd.max_characters_per_page');
+    }
+
     /**
      * Take outgoing messages from Botman and build payload for the service.
      *

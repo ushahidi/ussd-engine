@@ -120,6 +120,9 @@ class SurveyConversation extends Conversation
     public function run()
     {
         try {
+            /* TODO: we should have this as a service, instead of getting it here to push
+             *       it down the questions, etc.
+             */
             if (method_exists($this->bot->getDriver(), 'getDriverMessageFormat')) {
                 $this->driverFormat = $this->bot->getDriver()->getDriverMessageFormat();
                 $this->driverProtocol = $this->bot->getDriver()->getDriverProtocol();
@@ -798,8 +801,16 @@ class SurveyConversation extends Conversation
             'content' => $descriptionField ? $descriptionField['value']['value'] : null,
         ];
 
+        $driver = $this->bot->getDriver();
+        $message = $driver->getMessages()[0];
+        $user = $this->bot->getDriver()->getUser($message);
+
         try {
-            $this->sdk->createUSSDPost($post, $this->userId, new \DateTime());
+            if ($this->driverProtocol == 'ussd') {
+                $this->sdk->createUSSDPost($post, $user->getId(), new \DateTime());
+            } else if ($this->driverProtocol == 'whatsapp') {
+                $this->sdk->createWhatsAppPost($post, $user->getId(), new \DateTime());
+            }
         } catch (\Throwable $ex) {
             Log::error("Couldn't save post: " . $ex->getMessage(), ['post' => $post]);
             throw $ex;

@@ -290,7 +290,12 @@ class Page
 
     public static function getMaxCharactersPerPage(): int
     {
-        return (int) config('ussd.max_characters_per_page');
+        $driver = app('botman')->getDriver();
+        if (method_exists($driver, 'getMaxCharactersPerPage')) {
+            return $driver->getMaxCharactersPerPage();
+        } else {
+            return 4096;
+        }
     }
 
     public static function getOmissionIndicator(): string

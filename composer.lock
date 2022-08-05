@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "308f316e246a9204286bc9379d3a7b4c",
+    "content-hash": "b896b4f3861d891c0505398d8995660f",
     "packages": [
         {
             "name": "botman/botman",
@@ -5490,12 +5490,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ushahidi/platform-sdk-php.git",
-                "reference": "0bec377a528916246cfdddef361a5c7a4a98b5ad"
+                "reference": "d7be88c03f29958388e94252c2fa983115538dc8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/0bec377a528916246cfdddef361a5c7a4a98b5ad",
-                "reference": "0bec377a528916246cfdddef361a5c7a4a98b5ad",
+                "url": "https://api.github.com/repos/ushahidi/platform-sdk-php/zipball/d7be88c03f29958388e94252c2fa983115538dc8",
+                "reference": "d7be88c03f29958388e94252c2fa983115538dc8",
                 "shasum": ""
             },
             "require": {
@@ -5519,10 +5519,10 @@
             ],
             "description": "An SDK for the v5+ Ushahidi Platform",
             "support": {
-                "source": "https://github.com/ushahidi/platform-sdk-php/tree/v0.1.1",
+                "source": "https://github.com/ushahidi/platform-sdk-php/tree/v0.1.2",
                 "issues": "https://github.com/ushahidi/platform-sdk-php/issues"
             },
-            "time": "2022-04-03T04:55:14+00:00"
+            "time": "2022-08-03T14:06:03+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
