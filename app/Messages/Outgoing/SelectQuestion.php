@@ -83,6 +83,18 @@ class SelectQuestion extends FieldQuestion
     {
         $value = $answer->isInteractiveMessageReply() ? $answer->getValue() : $answer->getText();
 
+        /* If the value is not a match in the options map as a key, attempt an (approximate) match as value */
+        if (!array_key_exists($value, $this->optionsMap)) {
+            $v2 = strtolower(trim($value)); // lowecase trimmed strings
+            $matches = array_filter($this->optionsMap, function($opt) use ($v2) {
+                $opt = strtolower(trim($opt));
+                return $opt == $v2;
+            });
+            if (count($matches) == 1) {
+                $value = array_key_first($matches);
+            }
+        }
+
         return $value;
     }
 
