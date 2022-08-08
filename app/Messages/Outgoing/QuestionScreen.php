@@ -101,7 +101,7 @@ class QuestionScreen extends AbstractScreen
         }
 
         // TODO: Include this option only if user have not asked for more info before
-        if ($this->question->hasMoreInfo()) {
+        if ($this->question->hasMoreInfo() && !$this->question->shouldShowMoreInfoByDefault()) {
             $options[] = new Option(__('conversation.screen.info.value'), __('conversation.screen.info.text'));
         }
 
@@ -119,6 +119,10 @@ class QuestionScreen extends AbstractScreen
 
         if ($this->question->hasHints() && $this->question->shouldShowHintsByDefault()) {
             $text .= "\n".$this->question->getHints();
+        }
+
+        if ($this->question->hasMoreInfo() && $this->question->shouldShowMoreInfoByDefault()) {
+            $text .= "\n".$this->question->getMoreInfoContent();
         }
 
         return $text;

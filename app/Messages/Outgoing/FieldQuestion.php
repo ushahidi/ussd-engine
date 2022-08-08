@@ -53,7 +53,7 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
         $this->skipQuestion = $skip;
         if ($skip) {
             if ($this->defaultAnswerValue == null) {
-                throw new UnexpectedValueException("Requested to skip question without having set a default answer");
+                throw new \UnexpectedValueException("Requested to skip question without having set a default answer");
             }
             $this->setAnswer(Answer::create($this->defaultAnswerValue));
         }
@@ -271,8 +271,18 @@ abstract class FieldQuestion extends Question implements FieldQuestionInterface
     {
         /* Provide as configured in the settings */
         $attr_name = $this->getAttributeName();
-        return config("settings.ussd.show_hints_for_field_type.$attr_name") ?? false;
+        return config("settings.{$this->driverFormat}.show_hints_for_field_type.$attr_name") ?? false;
     }
+
+    /**
+     * Used to know if the information about the question (field description) should be shown
+     * by default
+     */
+    public function shouldShowMoreInfoByDefault(): bool
+    {
+        return config("settings.{$this->driverFormat}.show_more_info_about_question") ?? false;
+    }
+
 
     /**
      * Used to know if this question has hints to show.

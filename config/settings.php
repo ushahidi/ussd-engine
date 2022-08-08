@@ -29,6 +29,10 @@ $default_settings = [
 
     # USSD-specific settings
     "ussd" => [
+        # Should show the description of the question field. In USSD this is disabled by
+        # default due to the length limitations
+        "show_more_info_about_question" => false,
+
         # Should we show hints for specific field types.
         # The keys for this array match the values returned by the
         # getAtributeName() method in the different App\Messages\Outgoing\Fields questions
@@ -58,6 +62,30 @@ $default_settings = [
             "video" => true,
         ],
     ],
+
+    # Messaging platform specific settings (messaging format)
+    "messaging" => [
+        "show_more_info_about_question" => true,
+        "show_hints_for_field_type" => [
+            "categories" => true,
+            "checkboxes" => true,
+            "date" => true,
+            "datetime" => true,
+            "decimal" => true,
+            "description" => false,
+            "image" => false,
+            "integer" => false,
+            "location" => true,
+            "long text" => false,
+            "markdown" => false,
+            "radio buttons" => false,
+            "select" => false,
+            "short text" => false,
+            "title" => false,
+            "video" => false,
+        ],
+    ],
+
 ];
 
 if (file_exists(base_path('settings.json'))) {
