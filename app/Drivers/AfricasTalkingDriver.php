@@ -41,7 +41,7 @@ class AfricasTalkingDriver extends WebDriver
             'userId' =>  isset($data['phoneNumber']) ? $data['phoneNumber'] : null,
         ];
 
-        // $this->payload = $payload;
+        $this->payload = $payload;
         $this->event = Collection::make(array_merge(
             $data,
             $payload,
